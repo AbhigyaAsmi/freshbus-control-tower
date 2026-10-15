@@ -912,31 +912,9 @@ with tabs[2]:
            (f"{join_names(eligible['Route'].tolist())}. {v(eligible['Route'], 'It is', 'They are')} full, on time "
             "and well rated, so a new departure is likely to fill.")
            if not eligible.empty else "No route is both full and reliable right now, so no route should get a bus yet.",
-           "Add one daily departure on the top route below as a 4-week pilot. Keep it if it runs 75%+ full "
-           "and the existing trips stay above 85%.")
-    load = st.slider("Scenario: seats the extra daily trip sells (of 40)", 15, 40, m.EXTRA_TRIP_LOAD,
-                     help="Move to test a cautious or hopeful case. Cost per trip stays the same.")
-    cap = m.capacity_case(R, load)
-    if cap.empty:
-        st.info("No route is 85%+ full in this selection, so there is no case for an extra bus yet.")
-    else:
-        chart_head("Projected extra profit over 30 days from one more daily departure",
-                   f"Projection from {K['days']} days of data. Assumes {load} of 40 seats sold ({load / 40:.0%}) "
-                   "at today's average fare and cost per trip")
-        c = cap.sort_values("Monthly upside (30 days)", ascending=False)
-        fig = go.Figure(go.Bar(
-            y=c["Route"], x=c["Monthly upside (30 days)"], orientation="h",
-            marker=dict(color=[T["good"] if x > 0 else T["bad"] for x in c["Monthly upside (30 days)"]]),
-            text=[m.inr_short(x) for x in c["Monthly upside (30 days)"]], textposition="outside", cliponaxis=False,
-            textfont=dict(color=T["ink"], size=12), hovertemplate="%{y}<br>₹%{x:,.0f} a month<extra></extra>"))
-        fig.update_xaxes(range=[min(0, c["Monthly upside (30 days)"].min() * 1.3), max(1, c["Monthly upside (30 days)"].max()) * 1.3],
-                         showticklabels=False, showgrid=False)
-        fig.update_yaxes(categoryorder="array", categoryarray=list(c["Route"])[::-1])
-        show(style(fig, 70 + 50 * len(c)), "capacity")
-        html_table(["Route", "Seats sold now", "Average fare", "Cost per trip", "Break-even seats", "Profit per extra trip"],
-                   [[r["Route"], m.pct(r["Occupancy %"]), m.inr(r["Avg fare"]), m.inr(r["Cost per trip"]),
-                     f"{r['Break-even seats']:.0f} of 40", m.inr(r["Profit per extra trip"])] for _, r in cap.iterrows()],
-                   num_cols={1, 2, 3, 4, 5})
+           (f"Add one daily departure on <b>{m.capacity_case(R).iloc[0]['Route']}</b> as a 4-week pilot. "
+            if not m.capacity_case(R).empty else "Add one daily departure on the strongest route as a 4-week pilot. ")
+           + "Keep it if it runs 75%+ full and the existing trips stay above 85%.")
 
 # ==========================================================================
 # 4. Operations
