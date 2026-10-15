@@ -142,11 +142,11 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
   border: 1px solid var(--line); }
 .stButton button:hover, .stDownloadButton button:hover, .stLinkButton a:hover { border-color: var(--accent); color: var(--accent) !important; }
 .stLinkButton a[kind="primary"], .stLinkButton a[data-testid="stBaseLinkButton-primary"] { background: var(--accent); color: var(--bg) !important; border-color: var(--accent); }
-[data-baseweb="tab-list"] { border-bottom: none; gap: 8px; flex-wrap: wrap; padding: 2px 0 6px; }
+[data-baseweb="tab-list"] { border-bottom: none; gap: 6px; flex-wrap: wrap; padding: 2px 0 6px; }
 [data-baseweb="tab-border"], [data-baseweb="tab-highlight"] { display: none !important; }
 [data-testid="stTabs"]::after { background-image: linear-gradient(to right, transparent, var(--bg)) !important; }
 [data-baseweb="tab"] { background: var(--panel) !important; border: 1px solid var(--line) !important; border-radius: 999px !important;
-  padding: 7px 16px !important; height: auto !important; box-shadow: 0 1px 2px rgba(0,0,0,0.06); transition: border-color .15s, background .15s; }
+  padding: 6px 13px !important; height: auto !important; box-shadow: 0 1px 2px rgba(0,0,0,0.06); transition: border-color .15s, background .15s; }
 [data-baseweb="tab"]:hover { border-color: var(--accent) !important; }
 [data-baseweb="tab"][aria-selected="true"] { background: var(--accent) !important; border-color: var(--accent) !important; }
 [data-baseweb="tab"][aria-selected="true"] p { color: var(--on-fill) !important; }
@@ -157,7 +157,7 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
   box-shadow: 0 6px 20px rgba(0,0,0,0.18) !important; }
 [data-baseweb="tooltip"] p, [data-baseweb="tooltip"] span, [data-testid="stTooltipContent"] p,
 [data-testid="stTooltipContent"] span { color: var(--ink) !important; }
-[data-baseweb="tab"] p { color: var(--ink); font-size: 0.93rem; font-weight: 600; }
+[data-baseweb="tab"] p { color: var(--ink); font-size: 0.88rem; font-weight: 600; }
 [data-testid="stMetricValue"], [data-testid="stMetricLabel"] p { color: var(--ink); }
 .block-container { padding-top: 1.4rem; padding-bottom: 3rem; max-width: 1300px; }
 
@@ -181,7 +181,7 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 .sec-title { font-size: 1.15rem; font-weight: 700; color: var(--ink); }
 .sec-scope { font-size: 0.85rem; color: var(--sub); }
 .kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-@media (min-width: 1350px) { .kpi-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (min-width: 1700px) { .kpi-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
 .kpi-label { font-size: 0.86rem; color: var(--ink); font-weight: 650; }
