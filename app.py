@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 import metrics as m
 
@@ -139,7 +140,14 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
   border: 1px solid var(--line); }
 .stButton button:hover, .stDownloadButton button:hover, .stLinkButton a:hover { border-color: var(--accent); color: var(--accent) !important; }
 .stLinkButton a[kind="primary"], .stLinkButton a[data-testid="stBaseLinkButton-primary"] { background: var(--accent); color: var(--bg) !important; border-color: var(--accent); }
-[data-baseweb="tab-list"] { border-bottom: 1px solid var(--line); gap: 4px; }
+[data-baseweb="tab-list"] { border-bottom: 1px solid var(--line); gap: 2rem; flex-wrap: wrap; row-gap: 0.25rem; }
+[data-baseweb="tab"] { padding-left: 2px !important; padding-right: 2px !important; }
+[data-baseweb="tooltip"], [data-baseweb="tooltip"] div, [data-testid="stTooltipContent"],
+[data-testid="stTooltipContent"] div { background-color: var(--panel) !important; color: var(--ink) !important; }
+[data-baseweb="tooltip"] > div, [data-testid="stTooltipContent"] { border: 1px solid var(--line) !important; border-radius: 8px !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18) !important; }
+[data-baseweb="tooltip"] p, [data-baseweb="tooltip"] span, [data-testid="stTooltipContent"] p,
+[data-testid="stTooltipContent"] span { color: var(--ink) !important; }
 [data-baseweb="tab"] p { color: var(--sub); font-size: 0.98rem; font-weight: 600; }
 [data-baseweb="tab"][aria-selected="true"] p { color: var(--ink); }
 [data-baseweb="tab-highlight"] { background: var(--accent) !important; }
@@ -315,6 +323,59 @@ def html_table(headers: list[str], rows: list[list[str]], num_cols: set[int] = f
 def mini_bar(value: float, max_value: float, color: str, label: str) -> str:
     w = 0 if not max_value else max(0, min(100, 100 * value / max_value))
     return f'<div class="mini"><div class="bar"><span style="width:{w:.0f}%;background:{color}"></span></div>{label}</div>'
+
+
+def sortable_table(headers: list[str], rows: list[list[str]], keys: list[list], num_cols: set[int] = frozenset(),
+                   default_col: int = 1, default_desc: bool = True) -> None:
+    """Table with clickable column headers that sort ascending or descending (runs in a small iframe)."""
+    import json as _json
+    css = f"""
+    @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap');
+    body {{ margin:0; background:transparent; font-family:'Source Sans 3','Source Sans Pro',sans-serif; color:{T['ink']}; }}
+    .wrap {{ overflow-x:auto; border:1px solid {T['line']}; border-radius:12px; background:{T['panel']}; }}
+    table {{ width:100%; border-collapse:collapse; font-size:14px; }}
+    th {{ text-align:left; color:{T['sub']}; font-weight:650; padding:10px 12px; border-bottom:1px solid {T['line']};
+         white-space:nowrap; font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; user-select:none; }}
+    th:hover, th.on {{ color:{T['ink']}; }}
+    th .ar {{ display:inline-block; width:12px; margin-left:4px; color:{T['accent']}; font-size:11px; }}
+    th:not(.on) .ar::after {{ content:'\u2195'; color:{T['sub']}; opacity:.55; }}
+    th.on.desc .ar::after {{ content:'\u25BC'; }} th.on.asc .ar::after {{ content:'\u25B2'; }}
+    td {{ padding:10px 12px; border-bottom:1px solid {T['line']}; vertical-align:middle; line-height:1.45; }}
+    tr:last-child td {{ border-bottom:none; }}
+    .num {{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }}
+    td.strong {{ font-weight:650; white-space:nowrap; }}
+    .mini {{ display:flex; align-items:center; gap:8px; min-width:130px; }}
+    .mini .bar {{ flex:1; height:8px; background:{T['panel2']}; border-radius:4px; overflow:hidden; }}
+    .mini .bar span {{ display:block; height:100%; border-radius:4px; }}
+    .chip {{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:700; padding:2px 9px; border-radius:999px; white-space:nowrap; }}
+    .chip i {{ width:7px; height:7px; border-radius:50%; display:inline-block; }}
+    .chip.good {{ background:{T['good_bg']}; color:{T['good_t']}; }} .chip.good i {{ background:{T['good_t']}; }}
+    .chip.watch {{ background:{T['watch_bg']}; color:{T['watch_t']}; }} .chip.watch i {{ background:{T['watch_t']}; }}
+    .chip.bad {{ background:{T['bad_bg']}; color:{T['bad_t']}; }} .chip.bad i {{ background:{T['bad_t']}; }}
+    .chip.na {{ background:{T['panel2']}; color:{T['sub']}; }} .chip.na i {{ background:{T['sub']}; }}
+    .hint {{ font-size:12px; color:{T['sub']}; margin:6px 2px 0; }}
+    """
+    th = "".join(f'<th data-i="{i}" class="{"num" if i in num_cols else ""}">{h}<span class="ar"></span></th>'
+                 for i, h in enumerate(headers))
+    body = "".join(
+        f'<tr data-k=\'{_json.dumps(k)}\'>' + "".join(
+            f'<td class="{"num" if i in num_cols else ("strong" if i == 0 else "")}">{c}</td>' for i, c in enumerate(r))
+        + "</tr>" for r, k in zip(rows, keys))
+    js = f"""
+    const tb=document.querySelector('tbody'), ths=[...document.querySelectorAll('th')];
+    let col={default_col}, desc={'true' if default_desc else 'false'};
+    function draw(){{
+      const rs=[...tb.rows]; rs.sort((a,b)=>{{const x=JSON.parse(a.dataset.k)[col], y=JSON.parse(b.dataset.k)[col];
+        const r=(typeof x==='string')?x.localeCompare(y):x-y; return desc?-r:r;}});
+      rs.forEach(r=>tb.appendChild(r));
+      ths.forEach((t,i)=>{{t.classList.toggle('on',i===col); t.classList.toggle('desc',i===col&&desc); t.classList.toggle('asc',i===col&&!desc);}});
+    }}
+    ths.forEach((t,i)=>t.addEventListener('click',()=>{{ if(col===i) desc=!desc; else {{col=i; desc=(i!==0);}} draw(); }}));
+    draw();
+    """
+    html = (f"<style>{css}</style><div class='wrap'><table><thead><tr>{th}</tr></thead><tbody>{body}</tbody></table></div>"
+            f"<div class='hint'>Click any column heading to sort. Click again to reverse.</div><script>{js}</script>")
+    components.html(html, height=50 + 43 * len(rows) + 30, scrolling=False)
 
 
 def style(fig: go.Figure, height: int, legend: bool = False) -> go.Figure:
@@ -610,7 +671,7 @@ with tabs[0]:
                      showgrid=True, gridcolor=T["grid"], title="Profit per trip")
     show(style(fig, 470, legend=True), "portfolio")
 
-    chart_head("Route scorecard", f"One row per route for {PERIOD}, highest revenue first")
+    chart_head("Route scorecard", f"One row per route for {PERIOD}. Highest revenue first; click a heading to re-sort")
     occ_max = 100
     rows = []
     for _, r in R.iterrows():
@@ -621,8 +682,12 @@ with tabs[0]:
             m.mins(r["Arrival delay (min)"]), str(r["Breakdowns"]), m.num(r["Rating"]),
             chip(ACTION_STATE[r["Action"]], ACTION_SHORT[r["Action"]]),
         ])
-    html_table(["Route", "Revenue", "Profit", "Margin", "Seats sold", "Avg delay", "Breakdowns", "Rating", "Verdict"],
-               rows, num_cols={1, 2, 3, 5, 6, 7})
+    verdict_rank = {"Add capacity": 5, "Grow demand": 4, "Hold": 3, "Fix reliability, then demand": 2, "Fix reliability": 1}
+    keys = [[r["Route"], float(r["Revenue"]), float(r["Profit"]), float(r["Margin %"]), float(r["Occupancy %"]),
+             float(r["Arrival delay (min)"]), int(r["Breakdowns"]), float(r["Rating"]), verdict_rank.get(r["Action"], 0)]
+            for _, r in R.iterrows()]
+    sortable_table(["Route", "Revenue", "Profit", "Margin", "Seats sold", "Avg delay", "Breakdowns", "Rating", "Verdict"],
+                   rows, keys, num_cols={1, 2, 3, 5, 6, 7})
 
     chart_head("Action plan", "What I would ask each owner to do before the next weekly review")
     plan = []
