@@ -47,7 +47,7 @@ def secret(section: str, key: str | None = None, default=None):
         return default
 
 
-DASHBOARD_URL = secret("app", "url", "")
+DASHBOARD_URL = secret("app", "url", "https://freshbus-control-tower-iativgncaujowaufkmptkn.streamlit.app/")
 SENDER_NAME = secret("app", "sender_name", "Abhigya Asmi Pandey")
 
 # ==========================================================================
@@ -142,18 +142,22 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
   border: 1px solid var(--line); }
 .stButton button:hover, .stDownloadButton button:hover, .stLinkButton a:hover { border-color: var(--accent); color: var(--accent) !important; }
 .stLinkButton a[kind="primary"], .stLinkButton a[data-testid="stBaseLinkButton-primary"] { background: var(--accent); color: var(--bg) !important; border-color: var(--accent); }
-[data-baseweb="tab-list"] { border-bottom: 1px solid var(--line); gap: 1.15rem; }
+[data-baseweb="tab-list"] { border-bottom: none; gap: 8px; flex-wrap: wrap; padding: 2px 0 6px; }
+[data-baseweb="tab-border"], [data-baseweb="tab-highlight"] { display: none !important; }
 [data-testid="stTabs"]::after { background-image: linear-gradient(to right, transparent, var(--bg)) !important; }
-[data-baseweb="tab"] { padding-left: 2px !important; padding-right: 2px !important; }
+[data-baseweb="tab"] { background: var(--panel) !important; border: 1px solid var(--line) !important; border-radius: 999px !important;
+  padding: 7px 16px !important; height: auto !important; box-shadow: 0 1px 2px rgba(0,0,0,0.06); transition: border-color .15s, background .15s; }
+[data-baseweb="tab"]:hover { border-color: var(--accent) !important; }
+[data-baseweb="tab"][aria-selected="true"] { background: var(--accent) !important; border-color: var(--accent) !important; }
+[data-baseweb="tab"][aria-selected="true"] p { color: var(--on-fill) !important; }
+.tabs-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sub); font-weight: 700; margin: 18px 0 2px; }
 [data-baseweb="tooltip"], [data-baseweb="tooltip"] div, [data-testid="stTooltipContent"],
 [data-testid="stTooltipContent"] div { background-color: var(--panel) !important; color: var(--ink) !important; }
 [data-baseweb="tooltip"] > div, [data-testid="stTooltipContent"] { border: 1px solid var(--line) !important; border-radius: 8px !important;
   box-shadow: 0 6px 20px rgba(0,0,0,0.18) !important; }
 [data-baseweb="tooltip"] p, [data-baseweb="tooltip"] span, [data-testid="stTooltipContent"] p,
 [data-testid="stTooltipContent"] span { color: var(--ink) !important; }
-[data-baseweb="tab"] p { color: var(--sub); font-size: 0.98rem; font-weight: 600; }
-[data-baseweb="tab"][aria-selected="true"] p { color: var(--ink); }
-[data-baseweb="tab-highlight"] { background: var(--accent) !important; }
+[data-baseweb="tab"] p { color: var(--ink); font-size: 0.93rem; font-weight: 600; }
 [data-testid="stMetricValue"], [data-testid="stMetricLabel"] p { color: var(--ink); }
 .block-container { padding-top: 1.4rem; padding-bottom: 3rem; max-width: 1300px; }
 
@@ -173,7 +177,9 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 .sec-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
 .sec-title { font-size: 1.15rem; font-weight: 700; color: var(--ink); }
 .sec-scope { font-size: 0.85rem; color: var(--sub); }
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+@media (min-width: 1350px) { .kpi-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
 .kpi-label { font-size: 0.86rem; color: var(--ink); font-weight: 650; }
 .kpi-def { font-size: 0.74rem; color: var(--sub); min-height: 3.1em; line-height: 1.45; }
@@ -204,6 +210,17 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 .brief .lbl { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
 .brief .win .lbl { color: var(--good); } .brief .dec .lbl { color: var(--accent); } .brief .watch .lbl { color: var(--watch); }
 .brief ol { margin: 0; padding-left: 1.2em; } .brief li { margin: 2px 0; }
+.findings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 4px 0 6px; }
+@media (max-width: 1100px) { .findings { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .findings { grid-template-columns: 1fr; } }
+.finding { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 12px;
+  padding: 12px 14px; color: var(--ink); line-height: 1.5; }
+.finding .area { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--accent); }
+.finding .hl { font-weight: 650; font-size: 0.97rem; margin: 4px 0; }
+.finding .dt { color: var(--sub); font-size: 0.86rem; }
+.prio { display: inline-block; font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; }
+.prio.P1 { background: var(--bad-bg); color: var(--bad); } .prio.P2 { background: var(--watch-bg); color: var(--watch); }
+.prio.P3 { background: var(--panel2); color: var(--sub); }
 .qgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
 .qcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; line-height: 1.55; color: var(--ink); font-size: 0.95rem; }
 .qcard .lbl { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
@@ -222,7 +239,8 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 .fb-table tr:last-child td { border-bottom: none; }
 .fb-table td.num, .fb-table th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .fb-table td.strong { font-weight: 650; white-space: nowrap; }
-.fb-table td.wrap { min-width: 220px; }
+.fb-table td.wrap { min-width: 170px; }
+.nw { white-space: nowrap; }
 .mini { display: flex; align-items: center; gap: 8px; min-width: 130px; }
 .mini .bar { flex: 1; height: 8px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
 .mini .bar span { display: block; height: 100%; border-radius: 4px; }
@@ -497,7 +515,9 @@ with st.sidebar:
         load_sheet.clear()
         st.rerun()
 
-mask = (df_all["Trip_Date"].dt.date >= start) & (df_all["Trip_Date"].dt.date <= end)
+# Every filter is applied to the final trips: dates, region/starting city (via in_scope), routes, bus and trip type.
+mask = df_all.index.isin(in_scope.index)
+mask &= (df_all["Trip_Date"].dt.date >= start) & (df_all["Trip_Date"].dt.date <= end)
 mask &= df_all["Route"].isin(routes_sel or route_opts)
 if bus_sel:
     mask &= df_all["Bus_ID"].isin(bus_sel)
@@ -525,7 +545,8 @@ if trips_sel != "All trips":
 def header(K: dict | None) -> None:
     if K:
         period = f"{m.nice_date(K['first_date'])} to {m.nice_date(K['last_date'])}"
-        meta = (f"Weekly business review · <b>{period}</b> · {K['trips']} trips · {K['routes']} "
+        of_all = f" of {len(df_all)}" if K['trips'] != len(df_all) else ""
+        meta = (f"Weekly business review · <b>{period}</b> · {K['trips']}{of_all} trips · {K['routes']} "
                 f"route{'s' if K['routes'] != 1 else ''} · {K['buses']} bus{'es' if K['buses'] != 1 else ''}"
                 f"<br>Source: {source_label} · Prepared by {SENDER_NAME}")
     else:
@@ -572,24 +593,17 @@ header(K)
 
 line = (f"Fresh Bus made <b>{m.inr_short(K['profit'])}</b> contribution profit on <b>{m.inr_short(K['revenue'])}</b> "
         f"revenue ({m.pct(K['margin_pct'], 0)} margin). ")
+parts = []
 if not scale_routes.empty:
-    line += (f"{join_names(scale_routes['Route'].tolist())} {v(scale_routes['Route'], 'is', 'are')} full and on time: "
-             "ready for more buses. ")
+    parts.append(f"<b>{len(scale_routes)} route{'s are' if len(scale_routes) != 1 else ' is'} ready to grow</b>")
 if not fix_routes.empty:
-    w = fix_routes.iloc[0]
-    line += (f"<b>{w['Route']}</b> needs fixing first: {m.pct(w['Occupancy %'], 0)} full, "
-             f"{m.mins(w['Arrival delay (min)'])} late on average, {w['Breakdowns']} breakdown{'s' if w['Breakdowns'] != 1 else ''}. ")
-if SLOPE:
-    line += "Late arrivals drive low ratings."
+    parts.append(f"<b>{len(fix_routes)} need{'' if len(fix_routes) != 1 else 's'} a punctuality fix first</b>")
+if parts:
+    line += "; ".join(parts) + ". Details and decisions are in the Overview below."
 st.markdown(f'<div class="bottom-line"><span class="lbl">Bottom line</span>{line}</div>', unsafe_allow_html=True)
-BRIEF = m.ceo_brief(df)
+FINDINGS = m.key_findings(df)
 PLAN = m.action_plan(df)
 REVIEW_DAY = m.review_date(K["last_date"])
-dec_html = "".join(f"<li>{d}</li>" for d in BRIEF["decisions"]) or "<li>No decisions needed this week.</li>"
-st.markdown(f'<div class="brief"><div class="win"><span class="lbl">Working well</span>{BRIEF["win"]}</div>'
-            f'<div class="dec"><span class="lbl">Decisions for {m.short_date(REVIEW_DAY)} review</span><ol>{dec_html}</ol></div>'
-            f'<div class="watch"><span class="lbl">Biggest opportunity</span>{BRIEF["watch"]}</div></div>',
-            unsafe_allow_html=True)
 
 st.markdown(f'<div class="sec-head"><div class="sec-title">Network scorecard</div>'
             f'<div class="sec-scope">Totals for {SCOPE} · status against proposed targets</div></div>',
@@ -611,11 +625,12 @@ st.markdown('<div class="kpi-grid">' + "".join([
     kpi("On-time arrival", f"Trips arriving within {m.ON_TIME_MIN} min of schedule", m.pct(K["on_time_pct"]),
         m.status("on_time_pct", K["on_time_pct"]), f"target {m.TARGETS['on_time_pct']:.0f}%"),
     kpi("Customer rating", "Average post-trip rating, 1 to 5", f"{m.num(K['avg_rating'])}",
-        m.status("avg_rating", K["avg_rating"]), f"NPS-style {m.nps_style_str(K['nps_style'])} · target {m.TARGETS['avg_rating']}"),
+        m.status("avg_rating", K["avg_rating"]), f"NPS proxy {m.nps_style_str(K['nps_style'])} · target {m.TARGETS['avg_rating']}"),
     kpi("Breakdown rate", "Trips with a breakdown ÷ trips run", m.pct(K["breakdown_rate_pct"]),
         m.status("breakdown_rate_pct", K["breakdown_rate_pct"]), f"{K['breakdowns']} of {K['trips']} trips · target 0%"),
 ]) + "</div>", unsafe_allow_html=True)
 
+st.markdown('<div class="tabs-label">Explore the analysis · click a section</div>', unsafe_allow_html=True)
 tabs = st.tabs(["Overview", "Revenue", "Demand and capacity", "Operations", "Customer experience",
                 "KPI framework", "Weekly review"])
 
@@ -623,8 +638,20 @@ tabs = st.tabs(["Overview", "Revenue", "Demand and capacity", "Operations", "Cus
 # 1. Overview
 # ==========================================================================
 with tabs[0]:
-    tab_intro("Where to act this week", "Every route placed on one map, the route scorecard and the action plan.",
+    tab_intro("Where to act this week", "Key findings, the decisions needed, and every route on one map.",
               "Summary of Part A · Part B recommendations")
+    chart_head("Key findings", f"One headline per area for {PERIOD}. Each tab has the detail.")
+    st.markdown('<div class="findings">' + "".join(
+        f'<div class="finding"><div class="area">{f["area"]}</div><div class="hl">{f["headline"]}</div><div class="dt">{f["detail"]}</div></div>'
+        for f in FINDINGS) + "</div>", unsafe_allow_html=True)
+    decisions = [p for p in PLAN if p.get("decision")]
+    chart_head("Decisions required", f"For leadership at the {m.short_date(REVIEW_DAY)} review. The full action tracker is in the Weekly review tab.")
+    if decisions:
+        html_table(["Priority", "Decision", "Why now", "Owner", "Due", "Expected impact"],
+                   [[f'<span class="prio {p["priority"]}">{p["priority"]}</span>', f"<b>{p['decision']}</b>", p["problem"],
+                     p["owner"], f'<span class="nw">{m.short_date(p["due"])}</span>', p["impact"]] for p in decisions], wrap_cols={1, 2, 5})
+    else:
+        st.markdown('<div class="note">No leadership decisions are needed for this selection.</div>', unsafe_allow_html=True)
 
     chart_head("Route portfolio map",
                "Across: share of seats sold. Up: profit per trip. Bubble size: revenue. "
@@ -708,11 +735,6 @@ with tabs[0]:
     sortable_table(["Route", "Revenue", "Profit", "Margin", "Seats sold", "Avg delay", "Breakdowns", "Rating", "Verdict"],
                    rows, keys, num_cols={1, 2, 3, 5, 6, 7})
 
-    chart_head("Action plan", f"What each owner does before the {m.short_date(REVIEW_DAY)} review, with a due date and a success measure")
-    html_table(["#", "Action", "Owner", "Due", "Why", "Measure of success"],
-               [[str(i + 1), p["action"], p["owner"], m.short_date(p["due"]), p["why"], p["measure"]] for i, p in enumerate(PLAN)],
-               wrap_cols={1, 4})
-
     if len(DAILY) > 1:
         c1, c2 = st.columns(2)
         with c1:
@@ -746,8 +768,9 @@ with tabs[0]:
             f"- **Scope:** {K['days']} days and {K['trips']} trips, about {K['trips'] / max(K['routes'], 1):.0f} per route. "
             "The findings are clear early signals. Each weekly upload adds to them, and the week-on-week view "
             "in the Weekly review tab fills from week 2.\n"
-            f"- **Customer view:** the data has star ratings, so the dashboard shows an **NPS-style score** "
-            f"({m.PROMOTER_MIN}+ counts as a promoter, below {m.DETRACTOR_BELOW} as a detractor) until a true NPS survey is live.\n"
+            f"- **Customer view:** the data has star ratings, so the dashboard shows an **NPS proxy based on ratings** "
+            f"({m.PROMOTER_MIN}+ counts as a promoter, below {m.DETRACTOR_BELOW} as a detractor). It is not calculated from promoter, passive and detractor survey responses, "
+            "and will be replaced once survey NPS is collected.\n"
             "- **Contribution profit** = revenue minus energy (the data's fuel column), toll and crew cost. "
             "It is measured before fixed costs such as bus lease, depot, charging set-up and overheads.\n"
             f"- **Cancellations:** {K['cancellations']} in this period, which is a good result. Breakdowns are the reliability "
@@ -1008,9 +1031,9 @@ with tabs[4]:
            (f"{join_names(poor['Route'].tolist())} {v(poor['Route'], 'averages', 'average')} below {m.LOW_RATING} stars. "
             f"<b>{poor.iloc[0]['Route']}</b> is lowest at {m.num(poor.iloc[0]['Rating'])}. "
             "These are also the latest and least reliable routes. "
-            f"On the NPS-style score, routes range from {m.nps_style_str(by_rating['NPS-style'].max())} "
-            f"({by_rating.sort_values('NPS-style').iloc[-1]['Route']}) to {m.nps_style_str(by_rating['NPS-style'].min())} "
-            f"({by_rating.sort_values('NPS-style').iloc[0]['Route']}).")
+            f"On the NPS proxy (from ratings), routes range from {m.nps_style_str(by_rating['NPS proxy'].max())} "
+            f"({by_rating.sort_values('NPS proxy').iloc[-1]['Route']}) to {m.nps_style_str(by_rating['NPS proxy'].min())} "
+            f"({by_rating.sort_values('NPS proxy').iloc[0]['Route']}).")
            if not poor.empty else f"No route averages below {m.LOW_RATING} stars.",
            "Send delay alerts and automatic partial refunds on trips more than 30 minutes late, starting on these routes.")
     chart_head("Average customer rating by route", f"Post-trip rating, 1 to 5. Dashed line: target {m.TARGETS['avg_rating']}.")
@@ -1036,7 +1059,7 @@ with tabs[4]:
         strong = DRV[DRV["Strength"] == "Strong"]
         neg = strong[strong["Correlation"] < 0].sort_values("Correlation")
         qblock("Customer · Question 2 of 2", "What operational metrics appear correlated with NPS?",
-               "Measured on star ratings, which give an NPS-style view until NPS is collected. "
+               "Measured on star ratings, used as an NPS proxy until survey NPS is collected. "
                + (f"{join_names(neg['Metric'].tolist())} {v(neg['Metric'], 'has', 'have')} the strongest link: "
                   "as they rise, ratings fall. " if not neg.empty else "")
                + (f"Each extra <b>10 minutes late</b> costs about <b>{abs(SLOPE[0]) * 10:.2f} stars</b>. " if SLOPE else "")
@@ -1112,7 +1135,7 @@ with tabs[5]:
          m.inr(K["rev_per_seat_offered"]), "Up each week", "na"),
         ("On-time arrival rate", f"Trips arriving within {m.ON_TIME_MIN} min", "Punctuality is the core premium promise",
          m.pct(K["on_time_pct"]), "90%+", m.status("on_time_pct", K["on_time_pct"])),
-        ("NPS", f"% promoters minus % detractors; NPS-style from ratings until surveyed", "Early signal of repeat trips and referrals",
+        ("NPS proxy (from ratings)", f"% of trips rated 4.5+ minus % rated below 3.5. Not a survey NPS; replace once NPS is collected", "Early signal of repeat trips and referrals",
          f"{m.nps_style_str(K['nps_style'])} (rating {m.num(K['avg_rating'])})", "50+", m.status("nps_style", K["nps_style"])),
     ]), num_cols={3, 4}, wrap_cols={1, 2})
     st.markdown('<div class="chart-title">Operational metrics · Operations Head</div>', unsafe_allow_html=True)
@@ -1149,8 +1172,8 @@ with tabs[5]:
     ]), num_cols={3, 4}, wrap_cols={1, 2})
     st.markdown('<div class="chart-title">Customer metrics · CX team</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
-        ("NPS", "% promoters minus % detractors", "Best single predictor of repeat and referral",
-         f"{m.nps_style_str(K['nps_style'])} NPS-style ({m.pct(K['promoters_pct'], 0)} promoters, {m.pct(K['detractors_pct'], 0)} detractors)",
+        ("NPS proxy (from ratings)", "Rating-based stand-in for % promoters minus % detractors", "Best single predictor of repeat and referral",
+         f"{m.nps_style_str(K['nps_style'])} ({m.pct(K['promoters_pct'], 0)} rated 4.5+, {m.pct(K['detractors_pct'], 0)} below 3.5)",
          "50+", m.status("nps_style", K["nps_style"])),
         ("Low-rated trips", f"Trips rated below {m.LOW_RATING} ÷ rated trips", "Catches bad experiences an average hides",
          m.pct(K["low_rated_trips_pct"]), "Under 5%", "good" if K["low_rated_trips_pct"] < 5 else "bad"),
@@ -1218,17 +1241,19 @@ with tabs[6]:
         ("Seat occupancy", m.pct(KW["occupancy_pct"]), wow("occupancy_pct", lambda x: f"{x:.1f} pts"), f"{m.TARGETS['occupancy_pct']:.0f}%+"),
         ("On-time arrival", m.pct(KW["on_time_pct"]), wow("on_time_pct", lambda x: f"{x:.1f} pts"), f"{m.TARGETS['on_time_pct']:.0f}%+"),
         ("Breakdown rate", m.pct(KW["breakdown_rate_pct"]), wow("breakdown_rate_pct", lambda x: f"{x:.1f} pts", False), "0%"),
-        ("NPS-style score", m.nps_style_str(KW["nps_style"]), wow("nps_style", lambda x: f"{x:.0f}"), "50+"),
+        ("NPS proxy (from ratings)", m.nps_style_str(KW["nps_style"]), wow("nps_style", lambda x: f"{x:.0f}"), "50+"),
     ]
     html_table(["Metric", "This week", "Change vs last week", "Target"], [list(r) for r in rows], num_cols={1, 2, 3})
 
     # ---- Action tracker ----
     st.markdown('<div class="chart-title" style="margin-top:22px">Action tracker</div>'
-                '<div class="chart-sub">Opened at this review. Each Monday starts by updating this list: done, on track or late.</div>',
+                '<div class="chart-sub">In priority order. P1 = fix now, P2 = this month, P3 = set up. Each Monday review opens by updating status: not started, on track, late or done.</div>',
                 unsafe_allow_html=True)
-    html_table(["#", "Action", "Owner", "Due", "Success measure", "Status"],
-               [[str(i + 1), p["action"], p["owner"], m.short_date(p["due"]), p["measure"], chip("na", "Open")]
-                for i, p in enumerate(PLAN)], wrap_cols={1})
+    html_table(["Priority", "Business problem", "Action", "Owner", "Due", "Success measure", "Status", "Next review"],
+               [[f'<span class="prio {p["priority"]}">{p["priority"]}</span>', p["problem"], p["action"], p["owner"],
+                 f'<span class="nw">{m.short_date(p["due"])}</span>', p["measure"], chip("na", p["status"]),
+                 f'<span class="nw">{m.short_date(p["next_review"])}</span>']
+                for p in PLAN], wrap_cols={1, 2, 5})
 
     st.markdown('<div class="chart-title" style="margin-top:22px">This week\'s report</div>'
                 '<div class="chart-sub">Built from the data and filters in the sidebar. Choose how to send it.</div>',
