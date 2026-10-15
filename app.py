@@ -96,7 +96,7 @@ def text_on(fill: str) -> str:
 st.markdown(f"""<style>
 :root {{
   --bg:{T['bg']}; --panel:{T['panel']}; --panel2:{T['panel2']}; --line:{T['line']}; --ink:{T['ink']};
-  --sub:{T['sub']}; --accent:{T['accent']}; --hero:{T['hero']};
+  --sub:{T['sub']}; --accent:{T['accent']}; --hero:{T['hero']}; --on-fill:{T['on_fill']};
   --good:{T['good_t']}; --watch:{T['watch_t']}; --bad:{T['bad_t']};
   --good-bg:{T['good_bg']}; --watch-bg:{T['watch_bg']}; --bad-bg:{T['bad_bg']};
 }}
@@ -131,8 +131,10 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 [data-testid="stSlider"] [data-testid="stTickBar"] * { color: var(--sub) !important; }
 [data-testid="stExpander"] summary svg { color: var(--ink) !important; fill: var(--ink) !important; }
 [data-baseweb="popover"] ul, [data-baseweb="popover"] li, [data-baseweb="menu"] { background: var(--panel2) !important; color: var(--ink) !important; }
-[data-baseweb="tag"] { background: var(--accent) !important; }
-[data-baseweb="tag"] span { color: var(--bg) !important; }
+[data-testid="stMultiSelect"] [data-baseweb="select"] [data-baseweb="tag"], [data-baseweb="tag"] {
+  background-color: var(--accent) !important; border-radius: 6px !important; }
+[data-testid="stMultiSelect"] [data-baseweb="select"] [data-baseweb="tag"] *, [data-baseweb="tag"] * {
+  background-color: transparent !important; color: var(--on-fill) !important; fill: var(--on-fill) !important; }
 [data-testid="stExpander"] details { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
 [data-testid="stFileUploaderDropzone"] { background: var(--panel2); border: 1px dashed var(--line); }
 [data-testid="stFileUploaderDropzone"] * { color: var(--sub); }
