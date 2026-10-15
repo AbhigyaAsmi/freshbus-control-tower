@@ -142,7 +142,8 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
   border: 1px solid var(--line); }
 .stButton button:hover, .stDownloadButton button:hover, .stLinkButton a:hover { border-color: var(--accent); color: var(--accent) !important; }
 .stLinkButton a[kind="primary"], .stLinkButton a[data-testid="stBaseLinkButton-primary"] { background: var(--accent); color: var(--bg) !important; border-color: var(--accent); }
-[data-baseweb="tab-list"] { border-bottom: 1px solid var(--line); gap: 2rem; flex-wrap: wrap; row-gap: 0.25rem; }
+[data-baseweb="tab-list"] { border-bottom: 1px solid var(--line); gap: 1.15rem; }
+[data-testid="stTabs"]::after { background-image: linear-gradient(to right, transparent, var(--bg)) !important; }
 [data-baseweb="tab"] { padding-left: 2px !important; padding-right: 2px !important; }
 [data-baseweb="tooltip"], [data-baseweb="tooltip"] div, [data-testid="stTooltipContent"],
 [data-testid="stTooltipContent"] div { background-color: var(--panel) !important; color: var(--ink) !important; }
