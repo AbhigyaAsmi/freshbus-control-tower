@@ -192,6 +192,15 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 .qblock { margin: 22px 0 6px; }
 .qtag { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
 .qtitle { font-size: 1.22rem; font-weight: 750; color: var(--ink); margin: 2px 0 10px; }
+.scope-pill { display: inline-block; margin-top: 8px; margin-right: 6px; background: var(--good-bg); color: var(--good);
+  border-radius: 999px; padding: 3px 12px; font-size: 0.8rem; font-weight: 600; }
+.brief { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 10px; margin: 10px 0 4px; }
+@media (max-width: 900px) { .brief { grid-template-columns: 1fr; } }
+.brief > div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px;
+  color: var(--ink); font-size: 0.93rem; line-height: 1.55; }
+.brief .lbl { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+.brief .win .lbl { color: var(--good); } .brief .dec .lbl { color: var(--accent); } .brief .watch .lbl { color: var(--watch); }
+.brief ol { margin: 0; padding-left: 1.2em; } .brief li { margin: 2px 0; }
 .qgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
 .qcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; line-height: 1.55; color: var(--ink); font-size: 0.95rem; }
 .qcard .lbl { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
@@ -520,7 +529,8 @@ def header(K: dict | None) -> None:
                 f"<br>Source: {source_label} · Prepared by {SENDER_NAME}")
     else:
         meta = "Weekly business review"
-    filt = f'<div class="filt">Filtered view: {" · ".join(active)}</div>' if active else ""
+    filt = (f'<div class="scope-pill">Pilot view: {K["days"]} days, {K["trips"]} trips · refreshes weekly</div>' if K else "")
+    filt += f'<div class="filt">Filtered view: {" · ".join(active)}</div>' if active else ""
     st.markdown(f'<div class="hero"><div class="hero-kicker">Fresh Bus · Intercity operations</div>'
                 f'<div class="hero-title">{DASHBOARD_NAME}</div><div class="hero-meta">{meta}</div>{filt}</div>',
                 unsafe_allow_html=True)
@@ -571,6 +581,14 @@ if not fix_routes.empty:
 if SLOPE:
     line += "Late arrivals drive low ratings."
 st.markdown(f'<div class="bottom-line"><span class="lbl">Bottom line</span>{line}</div>', unsafe_allow_html=True)
+BRIEF = m.ceo_brief(df)
+PLAN = m.action_plan(df)
+REVIEW_DAY = m.review_date(K["last_date"])
+dec_html = "".join(f"<li>{d}</li>" for d in BRIEF["decisions"]) or "<li>No decisions needed this week.</li>"
+st.markdown(f'<div class="brief"><div class="win"><span class="lbl">Working well</span>{BRIEF["win"]}</div>'
+            f'<div class="dec"><span class="lbl">Decisions for {m.short_date(REVIEW_DAY)} review</span><ol>{dec_html}</ol></div>'
+            f'<div class="watch"><span class="lbl">Biggest opportunity</span>{BRIEF["watch"]}</div></div>',
+            unsafe_allow_html=True)
 
 st.markdown(f'<div class="sec-head"><div class="sec-title">Network scorecard</div>'
             f'<div class="sec-scope">Totals for {SCOPE} · status against proposed targets</div></div>',
@@ -585,14 +603,14 @@ def kpi(label: str, definition: str, value: str, state: str, foot: str) -> str:
 st.markdown('<div class="kpi-grid">' + "".join([
     kpi("Revenue", "Ticket sales across all trips", m.inr_short(K["revenue"]), "na",
         f"{m.inr(K['avg_fare'])} average fare"),
-    kpi("Contribution profit", "Revenue minus fuel, toll and crew cost", m.inr_short(K["profit"]),
-        m.status("margin_pct", K["margin_pct"]), f"{m.pct(K['margin_pct'])} margin · target {m.TARGETS['margin_pct']:.0f}%"),
+    kpi("Contribution profit", "Revenue minus energy, toll and crew cost, before fixed costs", m.inr_short(K["profit"]),
+        m.status("margin_pct", K["margin_pct"]), f"{m.pct(K['margin_pct'])} contribution margin · target {m.TARGETS['margin_pct']:.0f}%"),
     kpi("Seat occupancy", "Seats sold ÷ seats offered", m.pct(K["occupancy_pct"]),
         m.status("occupancy_pct", K["occupancy_pct"]), f"target {m.TARGETS['occupancy_pct']:.0f}%"),
     kpi("On-time arrival", f"Trips arriving within {m.ON_TIME_MIN} min of schedule", m.pct(K["on_time_pct"]),
         m.status("on_time_pct", K["on_time_pct"]), f"target {m.TARGETS['on_time_pct']:.0f}%"),
-    kpi("Customer rating", "Average post-trip rating, 1 to 5 (NPS stand-in)", f"{m.num(K['avg_rating'])}",
-        m.status("avg_rating", K["avg_rating"]), f"target {m.TARGETS['avg_rating']}"),
+    kpi("Customer rating", "Average post-trip rating, 1 to 5", f"{m.num(K['avg_rating'])}",
+        m.status("avg_rating", K["avg_rating"]), f"NPS-style {m.nps_style_str(K['nps_style'])} · target {m.TARGETS['avg_rating']}"),
     kpi("Breakdown rate", "Trips with a breakdown ÷ trips run", m.pct(K["breakdown_rate_pct"]),
         m.status("breakdown_rate_pct", K["breakdown_rate_pct"]), f"{K['breakdowns']} of {K['trips']} trips · target 0%"),
 ]) + "</div>", unsafe_allow_html=True)
@@ -689,33 +707,10 @@ with tabs[0]:
     sortable_table(["Route", "Revenue", "Profit", "Margin", "Seats sold", "Avg delay", "Breakdowns", "Rating", "Verdict"],
                    rows, keys, num_cols={1, 2, 3, 5, 6, 7})
 
-    chart_head("Action plan", "What I would ask each owner to do before the next weekly review")
-    plan = []
-    if bad_buses:
-        plan.append(["Ground " + " and ".join(bad_buses) + " for root-cause inspection; swap in healthy buses",
-                     "Operations Head", "; ".join(f"{r['Bus']}: {r['Breakdowns']} of {r['Trips']} trips"
-                                               for _, r in BUS[BUS["Breakdowns"] >= 2].iterrows()),
-                     "Breakdown rate to 0%"])
-    cap0 = m.capacity_case(R)
-    if not cap0.empty:
-        t = cap0.iloc[0]
-        tr = R[R["Route"] == t["Route"]].iloc[0]
-        plan.append([f"Pilot one extra daily departure on {t['Route']} for 4 weeks, after checking sold-out dates",
-                     "Revenue Head",
-                     f"{m.pct(tr['Occupancy %'], 0)} full, rating {m.num(tr['Rating'])}; adds about "
-                     f"{m.inr_short(t['Monthly upside (30 days)'])} a month at 75% load, the most of any route",
-                     "New trip 75%+ full"])
-    if not fix_routes.empty:
-        names = fix_routes["Route"].tolist()[:2]
-        plan.append([f"Fix departure discipline on {' and '.join(names)}: boarding cut-off, earlier crew reporting",
-                     "Operations Head", "They leave late before any traffic", "Departure delay under 5 min"])
-        plan.append([f"Hold demand campaigns on {fix_routes.iloc[0]['Route']} until reliability is fixed; review in 4 weeks",
-                     "CEO", f"Earns {m.inr(fix_routes.iloc[0]['Profit per trip'])} per trip vs {m.inr(K['profit_per_trip'])} average",
-                     "Occupancy above 70%"])
-    plan.append(["Add a one-question NPS survey and complaint reasons after every trip", "CX lead",
-                 "The data has a star rating but no NPS", "NPS on 50%+ of trips"])
-    html_table(["#", "Action", "Owner", "Why", "Measure of success"],
-               [[str(i + 1)] + p for i, p in enumerate(plan)], wrap_cols={1, 3})
+    chart_head("Action plan", f"What each owner does before the {m.short_date(REVIEW_DAY)} review, with a due date and a success measure")
+    html_table(["#", "Action", "Owner", "Due", "Why", "Measure of success"],
+               [[str(i + 1), p["action"], p["owner"], m.short_date(p["due"]), p["why"], p["measure"]] for i, p in enumerate(PLAN)],
+               wrap_cols={1, 4})
 
     if len(DAILY) > 1:
         c1, c2 = st.columns(2)
@@ -745,16 +740,18 @@ with tabs[0]:
             fig.update_yaxes(range=[3, 5], showgrid=True, gridcolor=T["grid"], tickfont=dict(color=T["sub"]))
             show(style(fig, 280), "daily_rating")
 
-    with st.expander("Read before using these numbers"):
+    with st.expander("About this data and how it scales"):
         st.markdown(
-            f"- The data covers **{K['days']} days**, so this is a one-week view.\n"
-            f"- There {'is' if K['cancellations'] == 1 else 'are'} **{K['cancellations']} cancellation"
-            f"{'' if K['cancellations'] == 1 else 's'}**, so cancellation rates can't be compared yet.\n"
-            "- There is **no NPS field**. The 1 to 5 customer rating stands in for it.\n"
-            "- **Contribution profit** = revenue minus fuel, toll and crew cost. It leaves out depreciation, "
-            "maintenance, GST and overheads.\n"
-            "- Each route has about 5 trips, so patterns show direction, not proof.\n"
-            "- **Regions** come from the city names in each route; the data has no region column.")
+            f"- **Scope:** {K['days']} days and {K['trips']} trips, about {K['trips'] / max(K['routes'], 1):.0f} per route. "
+            "The findings are clear early signals. Each weekly upload adds to them, and the week-on-week view "
+            "in the Weekly review tab fills from week 2.\n"
+            f"- **Customer view:** the data has star ratings, so the dashboard shows an **NPS-style score** "
+            f"({m.PROMOTER_MIN}+ counts as a promoter, below {m.DETRACTOR_BELOW} as a detractor) until a true NPS survey is live.\n"
+            "- **Contribution profit** = revenue minus energy (the data's fuel column), toll and crew cost. "
+            "It is measured before fixed costs such as bus lease, depot, charging set-up and overheads.\n"
+            f"- **Cancellations:** {K['cancellations']} in this period, which is a good result. Breakdowns are the reliability "
+            "measure to watch until cancellations appear.\n"
+            "- **Regions** come from the city names in each route.")
 
 # ==========================================================================
 # 2. Revenue
@@ -776,7 +773,7 @@ with tabs[1]:
     qblock("Revenue · Question 2 of 3", "Which routes generate the highest profit?",
            f"<b>{best['Route']}</b> keeps the most: {m.inr(best['Profit'])} contribution profit at "
            f"{m.pct(best['Margin %'])} margin"
-           + (f". It beats {top['Route']} on profit because its fuel and toll costs are lower." if best["Route"] != top["Route"] else "."),
+           + (f". It beats {top['Route']} on profit because its energy and toll costs are lower." if best["Route"] != top["Route"] else "."),
            "Use profit per trip, not revenue, to decide where the next bus goes.")
     chart_head("Revenue and contribution profit by route",
                f"₹ for {PERIOD}. The second bar shows contribution profit and its margin.")
@@ -900,8 +897,9 @@ with tabs[2]:
     if cap.empty:
         st.info("No route is 85%+ full in this selection, so there is no case for an extra bus yet.")
     else:
-        chart_head("Extra monthly profit from one more daily departure",
-                   f"Assumes {load} of 40 seats sold ({load / 40:.0%}) at today's average fare and cost per trip, 30 days")
+        chart_head("Projected extra profit over 30 days from one more daily departure",
+                   f"Projection from {K['days']} days of data. Assumes {load} of 40 seats sold ({load / 40:.0%}) "
+                   "at today's average fare and cost per trip")
         c = cap.sort_values("Monthly upside (30 days)", ascending=False)
         fig = go.Figure(go.Bar(
             y=c["Route"], x=c["Monthly upside (30 days)"], orientation="h",
@@ -1009,7 +1007,10 @@ with tabs[4]:
     qblock("Customer · Question 1 of 2", "Which routes are causing poor customer satisfaction?",
            (f"{join_names(poor['Route'].tolist())} {v(poor['Route'], 'averages', 'average')} below {m.LOW_RATING} stars. "
             f"<b>{poor.iloc[0]['Route']}</b> is lowest at {m.num(poor.iloc[0]['Rating'])}. "
-            "These are also the latest and least reliable routes.")
+            "These are also the latest and least reliable routes. "
+            f"On the NPS-style score, routes range from {m.nps_style_str(by_rating['NPS-style'].max())} "
+            f"({by_rating.sort_values('NPS-style').iloc[-1]['Route']}) to {m.nps_style_str(by_rating['NPS-style'].min())} "
+            f"({by_rating.sort_values('NPS-style').iloc[0]['Route']}).")
            if not poor.empty else f"No route averages below {m.LOW_RATING} stars.",
            "Send delay alerts and automatic partial refunds on trips more than 30 minutes late, starting on these routes.")
     chart_head("Average customer rating by route", f"Post-trip rating, 1 to 5. Dashed line: target {m.TARGETS['avg_rating']}.")
@@ -1035,7 +1036,7 @@ with tabs[4]:
         strong = DRV[DRV["Strength"] == "Strong"]
         neg = strong[strong["Correlation"] < 0].sort_values("Correlation")
         qblock("Customer · Question 2 of 2", "What operational metrics appear correlated with NPS?",
-               "The data has no NPS, so the star rating stands in. "
+               "Measured on star ratings, which give an NPS-style view until NPS is collected. "
                + (f"{join_names(neg['Metric'].tolist())} {v(neg['Metric'], 'has', 'have')} the strongest link: "
                   "as they rise, ratings fall. " if not neg.empty else "")
                + (f"Each extra <b>10 minutes late</b> costs about <b>{abs(SLOPE[0]) * 10:.2f} stars</b>. " if SLOPE else "")
@@ -1102,7 +1103,7 @@ with tabs[5]:
     tab_intro("KPI framework", "What each leader should watch, why, and where we stand this week.", "Part B · 4 audiences")
     st.markdown('<div class="chart-title">North star metrics · CEO</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
-        ("Contribution profit and margin", "Revenue minus fuel, toll and crew; ₹ and % of revenue",
+        ("Contribution profit and margin", "Revenue minus energy, toll and crew, before fixed costs; ₹ and % of revenue",
          "Shows whether growth is profitable", f"{m.inr_short(K['profit'])} · {m.pct(K['margin_pct'])}", "65%+",
          m.status("margin_pct", K["margin_pct"])),
         ("Seat occupancy", "Seats sold ÷ seats offered", "Trip costs are fixed, so empty seats are lost profit",
@@ -1111,8 +1112,8 @@ with tabs[5]:
          m.inr(K["rev_per_seat_offered"]), "Up each week", "na"),
         ("On-time arrival rate", f"Trips arriving within {m.ON_TIME_MIN} min", "Punctuality is the core premium promise",
          m.pct(K["on_time_pct"]), "90%+", m.status("on_time_pct", K["on_time_pct"])),
-        ("NPS (rating today)", "Average post-trip rating; NPS once collected", "Early signal of repeat trips and referrals",
-         m.num(K["avg_rating"]), "4.5 / NPS 50+", m.status("avg_rating", K["avg_rating"])),
+        ("NPS", f"% promoters minus % detractors; NPS-style from ratings until surveyed", "Early signal of repeat trips and referrals",
+         f"{m.nps_style_str(K['nps_style'])} (rating {m.num(K['avg_rating'])})", "50+", m.status("nps_style", K["nps_style"])),
     ]), num_cols={3, 4}, wrap_cols={1, 2})
     st.markdown('<div class="chart-title">Operational metrics · Operations Head</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
@@ -1124,8 +1125,14 @@ with tabs[5]:
          m.pct(K["breakdown_rate_pct"]), "0%", m.status("breakdown_rate_pct", K["breakdown_rate_pct"])),
         ("Cancellation rate", "Cancelled ÷ scheduled trips", "Loses all revenue on the trip and hurts trust most",
          m.pct(K["cancel_pct"]), "Under 1%", m.status("cancel_pct", K["cancel_pct"])),
-        ("Cost per seat offered", "(Fuel + toll + crew) ÷ seats offered", "Catches fuel inefficiency and cost creep",
+        ("Cost per seat offered", "(Energy + toll + crew) ÷ seats offered", "Catches energy inefficiency and cost creep",
          m.inr(K["cost_per_seat_offered"]), "Flat or down", "na"),
+        ("Energy cost per km", "Charging cost ÷ km run, by route and bus", "The core cost lever of an electric fleet",
+         "Next: add km", "Flat or down", "na"),
+        ("Charge-ready departures", "Trips leaving with planned state of charge", "Prevents range stress, slow driving and late arrivals",
+         "Next: from telematics", "98%+", "na"),
+        ("Fleet availability", "Buses fit to run ÷ fleet, incl. charger uptime", "Sets how fast we can add departures",
+         "Next: from depot log", "95%+", "na"),
     ]), num_cols={3, 4}, wrap_cols={1, 2})
     st.markdown('<div class="chart-title">Commercial metrics · Revenue team</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
@@ -1143,16 +1150,17 @@ with tabs[5]:
     st.markdown('<div class="chart-title">Customer metrics · CX team</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
         ("NPS", "% promoters minus % detractors", "Best single predictor of repeat and referral",
-         "Not collected", "NPS 50+", "na"),
+         f"{m.nps_style_str(K['nps_style'])} NPS-style ({m.pct(K['promoters_pct'], 0)} promoters, {m.pct(K['detractors_pct'], 0)} detractors)",
+         "50+", m.status("nps_style", K["nps_style"])),
         ("Low-rated trips", f"Trips rated below {m.LOW_RATING} ÷ rated trips", "Catches bad experiences an average hides",
          m.pct(K["low_rated_trips_pct"]), "Under 5%", "good" if K["low_rated_trips_pct"] < 5 else "bad"),
         ("Rating on late trips", f"Average rating when over {m.ON_TIME_MIN} min late", "How well we recover a bad trip",
          m.num(K["rating_late_trips"]), "4.0+",
          "na" if pd.isna(K["rating_late_trips"]) else "good" if K["rating_late_trips"] >= 4 else "bad"),
         ("Complaints per 1,000 riders", "Tickets ÷ riders × 1,000, by reason", "Tells you what to fix",
-         "Not in data", "Down each week", "na"),
+         "Next: add to survey", "Down each week", "na"),
         ("Repeat rider rate", "Riders with 2+ trips in 90 days", "Loyalty is the payoff of a premium service",
-         "Not in data", "Up each month", "na"),
+         "Next: from bookings", "Up each month", "na"),
     ]), num_cols={3, 4}, wrap_cols={1, 2})
 
 # ==========================================================================
@@ -1184,6 +1192,43 @@ with tabs[6]:
         st.markdown('<div class="note"><b>Red flags that force a discussion:</b> a route under 70% full for 2 weeks '
                     'or over 90% full · a route over 15 min late on average · any bus with 2+ breakdowns · '
                     'a route rated under 3.5 · any cancellation.</div>', unsafe_allow_html=True)
+
+    # ---- Week on week ----
+    last = df["Trip_Date"].max()
+    this_wk = df[df["Trip_Date"] > last - pd.Timedelta(days=7)]
+    prev_wk = df[(df["Trip_Date"] <= last - pd.Timedelta(days=7)) & (df["Trip_Date"] > last - pd.Timedelta(days=14))]
+    KW = m.network_kpis(this_wk)
+    KP = m.network_kpis(prev_wk) if not prev_wk.empty else None
+
+    def wow(key, fmt, better_up=True):
+        if KP is None:
+            return "Baseline week"
+        d = KW[key] - KP[key]
+        good = (d >= 0) == better_up
+        return f'<span style="color:var(--{"good" if good else "bad"})">{"▲" if d >= 0 else "▼"} {fmt(abs(d))}</span>'
+
+    st.markdown('<div class="chart-title" style="margin-top:22px">Scorecard vs last week</div>'
+                '<div class="chart-sub">This is the baseline week. From week 2, upload the new week\'s data in the sidebar '
+                'and the change column fills on its own.</div>' if KP is None else
+                '<div class="chart-title" style="margin-top:22px">Scorecard vs last week</div>'
+                '<div class="chart-sub">Last 7 days against the 7 days before.</div>', unsafe_allow_html=True)
+    rows = [
+        ("Revenue", m.inr_short(KW["revenue"]), wow("revenue", m.inr_short), "Up each week"),
+        ("Contribution margin", m.pct(KW["margin_pct"]), wow("margin_pct", lambda x: f"{x:.1f} pts"), f"{m.TARGETS['margin_pct']:.0f}%+"),
+        ("Seat occupancy", m.pct(KW["occupancy_pct"]), wow("occupancy_pct", lambda x: f"{x:.1f} pts"), f"{m.TARGETS['occupancy_pct']:.0f}%+"),
+        ("On-time arrival", m.pct(KW["on_time_pct"]), wow("on_time_pct", lambda x: f"{x:.1f} pts"), f"{m.TARGETS['on_time_pct']:.0f}%+"),
+        ("Breakdown rate", m.pct(KW["breakdown_rate_pct"]), wow("breakdown_rate_pct", lambda x: f"{x:.1f} pts", False), "0%"),
+        ("NPS-style score", m.nps_style_str(KW["nps_style"]), wow("nps_style", lambda x: f"{x:.0f}"), "50+"),
+    ]
+    html_table(["Metric", "This week", "Change vs last week", "Target"], [list(r) for r in rows], num_cols={1, 2, 3})
+
+    # ---- Action tracker ----
+    st.markdown('<div class="chart-title" style="margin-top:22px">Action tracker</div>'
+                '<div class="chart-sub">Opened at this review. Each Monday starts by updating this list: done, on track or late.</div>',
+                unsafe_allow_html=True)
+    html_table(["#", "Action", "Owner", "Due", "Success measure", "Status"],
+               [[str(i + 1), p["action"], p["owner"], m.short_date(p["due"]), p["measure"], chip("na", "Open")]
+                for i, p in enumerate(PLAN)], wrap_cols={1})
 
     st.markdown('<div class="chart-title" style="margin-top:22px">This week\'s report</div>'
                 '<div class="chart-sub">Built from the data and filters in the sidebar. Choose how to send it.</div>',
