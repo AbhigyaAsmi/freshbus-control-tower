@@ -20,6 +20,8 @@ ON_TIME_MIN = 15           # a trip is on time if it arrives within this many mi
 LATE_ROUTE_MIN = 15.0      # a route is "late" if its average arrival delay is above this
 LOW_RATING = 3.5           # a trip or route below this rating is poorly rated
 EXTRA_TRIP_LOAD = 30       # seats assumed sold on a new extra departure (75% of 40)
+PROMOTER_MIN = 4.5         # NPS-style score: a trip rated this or higher counts as a promoter
+DETRACTOR_BELOW = 3.5      # NPS-style score: a trip rated below this counts as a detractor
 
 TARGETS = {
     "margin_pct": 65.0,
@@ -30,6 +32,7 @@ TARGETS = {
     "cancel_pct": 1.0,
     "avg_dep_delay_min": 5.0,
     "avg_arr_delay_min": 10.0,
+    "nps_style": 50.0,
 }
 
 REQUIRED_COLUMNS = [
@@ -141,7 +144,18 @@ def network_kpis(df: pd.DataFrame) -> dict:
         "rating_late_trips": late.mean() if len(late) else np.nan,
         "full_trips_pct": pct((ran["Occupancy_pct"] >= SEATS_EXCESS).sum(), n_ran),
         "empty_trips_pct": pct((ran["Occupancy_pct"] < 60).sum(), n_ran),
+        "promoters_pct": pct((rated >= PROMOTER_MIN).sum(), len(rated)),
+        "detractors_pct": pct((rated < DETRACTOR_BELOW).sum(), len(rated)),
+        "nps_style": nps_style(rated),
     }
+
+
+def nps_style(ratings: pd.Series) -> float:
+    """NPS-style score from star ratings: % rated 4.5+ minus % rated below 3.5 (range -100 to +100)."""
+    r = ratings.dropna()
+    if not len(r):
+        return np.nan
+    return 100 * ((r >= PROMOTER_MIN).mean() - (r < DETRACTOR_BELOW).mean())
 
 
 # --------------------------------------------------------------------------
@@ -192,6 +206,7 @@ def route_table(df: pd.DataFrame) -> pd.DataFrame:
             "Cancelled": int(g["Cancelled"].sum()),
             "Cancellation %": 100 * g["Cancelled"].mean(),
             "Rating": ran["Customer_Rating"].mean(),
+            "NPS-style": nps_style(ran["Customer_Rating"]),
             "Demand": ("Excess demand" if occ >= SEATS_EXCESS
                        else "Low occupancy" if occ < SEATS_LOW else "Healthy"),
             "Reliable": reliable,
@@ -321,7 +336,7 @@ def status(metric: str, value: float) -> str:
         return "watch" if value <= t + slack else "bad"
     if value >= t:
         return "good"
-    slack = 0.3 if metric == "avg_rating" else 10
+    slack = 0.3 if metric == "avg_rating" else 25 if metric == "nps_style" else 10
     return "watch" if value >= t - slack else "bad"
 
 
@@ -375,6 +390,92 @@ def nice_date(d) -> str:
 # --------------------------------------------------------------------------
 # Weekly business review report
 # --------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+# Action plan and CEO brief (shared by the dashboard and the email)
+# --------------------------------------------------------------------------
+def review_date(last_date) -> pd.Timestamp:
+    """The Monday review that follows the last day of data."""
+    d = pd.Timestamp(last_date).normalize()
+    return d + pd.Timedelta(days=(7 - d.weekday()) % 7 or 7)
+
+
+def short_date(t) -> str:
+    t = pd.Timestamp(t)
+    return f"{t:%a} {t.day} {t:%b}"
+
+
+def action_plan(df: pd.DataFrame) -> list[dict]:
+    """This week's actions with owner, due date and the metric each should move."""
+    k = network_kpis(df)
+    routes = route_table(df)
+    buses = bus_table(df)
+    cap = capacity_case(routes)
+    fix = routes[~routes["Action"].isin(["Add capacity", "Hold"])].sort_values("Profit per trip")
+    bad_bus = buses[buses["Breakdowns"] >= 2] if not buses.empty else buses
+    mon = review_date(k["last_date"])
+    plan = []
+    if not bad_bus.empty:
+        ids = bad_bus["Bus"].tolist()
+        plan.append(dict(
+            action=f"Inspect {' and '.join(ids)} (battery, drivetrain, charging logs) and swap in healthy buses until cleared",
+            owner="Operations Head", due=mon + pd.Timedelta(days=2),
+            why="; ".join(f"{r['Bus']}: {r['Breakdowns']} of {r['Trips']} trips" for _, r in bad_bus.iterrows()),
+            measure="Breakdown rate to 0%", decision=f"Take {' and '.join(ids)} off the road for inspection"))
+    if not cap.empty:
+        c = cap.iloc[0]
+        r = routes[routes["Route"] == c["Route"]].iloc[0]
+        plan.append(dict(
+            action=f"Pilot one extra daily departure on {c['Route']} for 4 weeks, after checking sold-out dates and a spare bus",
+            owner="Revenue Head", due=mon + pd.Timedelta(days=7),
+            why=(f"{pct(r['Occupancy %'], 0)} full, rating {num(r['Rating'])}. Costs {inr(c['Cost per trip'])} a trip and "
+                 f"breaks even at {c['Break-even seats']:.0f} of 40 seats. At 30 seats: about {inr_short(c['Monthly upside (30 days)'])} "
+                 "over 30 days (projection)"),
+            measure="New trip 75%+ full; existing trips stay 85%+",
+            decision=f"Approve a 4-week pilot departure on {c['Route']}"))
+    if not fix.empty:
+        names = fix["Route"].tolist()[:2]
+        plan.append(dict(
+            action=f"Departure-discipline drive on {' and '.join(names)}: boarding cut-off, earlier crew reporting, charge-ready check the night before",
+            owner="Operations Head", due=mon + pd.Timedelta(days=7),
+            why="Most of the delay starts before the bus leaves",
+            measure="Departure delay under 5 min",
+            decision=f"Back an on-time push on {' and '.join(names)}"))
+        w = fix.iloc[0]
+        plan.append(dict(
+            action=f"Pause paid demand campaigns on {w['Route']} until punctuality is fixed; restart after the 4-week check",
+            owner="CEO", due=mon + pd.Timedelta(days=28),
+            why=f"Earns {inr(w['Profit per trip'])} a trip vs {inr(k['profit_per_trip'])} network average",
+            measure="Occupancy above 70%", decision=None))
+    plan.append(dict(
+        action="Add a one-question NPS survey and complaint reasons to the post-trip message",
+        owner="CX lead", due=mon + pd.Timedelta(days=14),
+        why="Turns the star rating into a true NPS and tells us what to fix",
+        measure="NPS captured on 50%+ of trips", decision=None))
+    return plan
+
+
+def ceo_brief(df: pd.DataFrame) -> dict:
+    routes = route_table(df)
+    scale = routes[routes["Action"] == "Add capacity"].sort_values("Occupancy %", ascending=False)
+    fix = routes[~routes["Action"].isin(["Add capacity", "Hold"])].sort_values("Profit per trip")
+    if not scale.empty:
+        win = (f"{len(scale)} route{'s' if len(scale) != 1 else ''} ({', '.join(scale['Route'])}) "
+               f"{'runs' if len(scale) == 1 else 'run'} {pct(scale['Occupancy %'].min(), 0)} to {pct(scale['Occupancy %'].max(), 0)} full "
+               f"at {pct(scale['Margin %'].min(), 0)} to {pct(scale['Margin %'].max(), 0)} margin, on time and well rated.")
+    else:
+        top = routes.sort_values("Profit", ascending=False).iloc[0]
+        win = f"{top['Route']} leads on profit at {inr_short(top['Profit'])} ({pct(top['Margin %'], 0)} margin)."
+    if not fix.empty:
+        w = fix.iloc[0]
+        watch = (f"{w['Route']}: {pct(w['Occupancy %'], 0)} full, {mins(w['Arrival delay (min)'])} late on average, "
+                 f"rating {num(w['Rating'])}. A reliability fix should lift both ratings and demand.")
+    else:
+        watch = "No route is off target on both demand and reliability this week."
+    decisions = [p["decision"] for p in action_plan(df) if p.get("decision")][:3]
+    return dict(win=win, decisions=decisions, watch=watch)
+
+
 def build_report(df: pd.DataFrame, sender: str = "Abhigya Asmi Pandey", dashboard_url: str = "") -> tuple[str, str]:
     k = network_kpis(df)
     routes = route_table(df)
@@ -399,7 +500,7 @@ def build_report(df: pd.DataFrame, sender: str = "Abhigya Asmi Pandey", dashboar
         "1. HEADLINE",
         f"Revenue: {inr(k['revenue'])}. Contribution profit: {inr(k['profit'])} ({pct(k['margin_pct'])} margin).",
         f"Seat occupancy: {pct(k['occupancy_pct'])}. On-time arrivals: {pct(k['on_time_pct'])}.",
-        f"Avg rating: {num(k['avg_rating'])} of 5. Breakdowns: {k['breakdowns']} of {k['trips']} trips. "
+        f"Avg rating: {num(k['avg_rating'])} of 5 (NPS-style {nps_style_str(k['nps_style'])}). Breakdowns: {k['breakdowns']} of {k['trips']} trips. "
         f"Cancellations: {k['cancellations']}.",
         "",
         "2. ROUTES TO SCALE",
@@ -423,26 +524,26 @@ def build_report(df: pd.DataFrame, sender: str = "Abhigya Asmi Pandey", dashboar
         L.append(f"Each extra 10 minutes of arrival delay goes with a rating about {abs(slope[0]) * 10:.2f} points lower.")
     if bad_bus:
         L.append(f"Breakdowns sit on a few buses: {', '.join(bad_bus)} broke down 2 or more times.")
-    L += ["", "5. DECISIONS NEEDED"]
-    if bad_bus:
-        L.append(f"- Ground {' and '.join(bad_bus)} for inspection and swap in healthy buses (Operations).")
-    if not cap.empty:
-        c = cap.iloc[0]
-        L.append(f"- Approve one extra daily departure on {c['Route']} after checking sold-out dates. "
-                 f"Estimated {inr(c['Monthly upside (30 days)'])} a month at 75% load (Revenue).")
-    if not fix.empty:
-        L.append("- Tighten departure discipline on the routes to fix (Operations).")
-    L.append("- Start collecting NPS, complaint reasons and cancellation reasons per trip (CX).")
+    L += ["", "5. DECISIONS AND ACTIONS (owner, due)"]
+    for p in action_plan(df):
+        L.append(f"- {p['action']} ({p['owner']}, by {short_date(p['due'])}). Success: {p['measure']}.")
     L += [
         "",
-        "6. DATA NOTES",
-        f"The data covers {k['days']} days. Customer rating is used in place of NPS. "
-        "Profit is revenue minus fuel, toll and crew cost, so it excludes depreciation, maintenance and overheads.",
+        "6. SCOPE AND NEXT STEPS",
+        f"This review covers {k['days']} days ({k['trips']} trips). The dashboard refreshes each week, "
+        "so trends and week-on-week changes build up from here.",
+        f"Customer view: NPS-style score {nps_style_str(k['nps_style'])} from star ratings "
+        f"({PROMOTER_MIN}+ promoters, below {DETRACTOR_BELOW} detractors), until a true NPS survey is live.",
+        "Profit shown is contribution profit: revenue minus energy, toll and crew cost, before fixed costs.",
     ]
     if dashboard_url:
         L += ["", f"Live dashboard: {dashboard_url}"]
     L += ["", "Regards,", sender]
     return subject, "\n".join(L)
+
+
+def nps_style_str(x) -> str:
+    return "n/a" if x is None or pd.isna(x) else f"{x:+.0f}"
 
 
 def mailto_link(subject: str, body: str, to: str = REPORT_TO) -> str:
