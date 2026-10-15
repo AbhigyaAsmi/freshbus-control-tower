@@ -29,7 +29,7 @@ importlib.reload(m)  # pick up edits to metrics.py without restarting the app
 # Page setup
 # ==========================================================================
 DASHBOARD_NAME = "Route Performance Control Tower"
-st.set_page_config(page_title=f"Fresh Bus | {DASHBOARD_NAME}", page_icon="🚌", layout="wide",
+st.set_page_config(page_title=f"Fresh Bus | {DASHBOARD_NAME}", page_icon=None, layout="wide",
                    initial_sidebar_state="expanded")
 
 SHEET_ID = "1zujOXZyfe9FkmWmnLnY75rsK5sRjNKFwKsf55vpQWfU"
@@ -74,7 +74,7 @@ THEMES = {
     ),
 }
 
-st.sidebar.markdown("## 🚌 Fresh Bus")
+st.sidebar.markdown("## Fresh Bus")
 st.sidebar.caption(DASHBOARD_NAME)
 theme_name = st.sidebar.radio("Display", list(THEMES), horizontal=True, key="theme",
                               help="Dark suits screens. Light suits projectors and printing.")
@@ -150,7 +150,7 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 [data-baseweb="tab"]:hover { border-color: var(--accent) !important; }
 [data-baseweb="tab"][aria-selected="true"] { background: var(--accent) !important; border-color: var(--accent) !important; }
 [data-baseweb="tab"][aria-selected="true"] p { color: var(--on-fill) !important; }
-.tabs-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sub); font-weight: 700; margin: 18px 0 2px; }
+.tabs-label { font-size: 0.85rem; color: var(--sub); font-weight: 600; margin: 18px 0 2px; }
 [data-baseweb="tooltip"], [data-baseweb="tooltip"] div, [data-testid="stTooltipContent"],
 [data-testid="stTooltipContent"] div { background-color: var(--panel) !important; color: var(--ink) !important; }
 [data-baseweb="tooltip"] > div, [data-testid="stTooltipContent"] { border: 1px solid var(--line) !important; border-radius: 8px !important;
@@ -163,6 +163,9 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 
 /* ---- Header ---- */
 .hero { background: var(--hero); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; margin-bottom: 14px; }
+.hero-brand { display: flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 650; font-size: 0.9rem; margin-bottom: 4px; }
+.hb-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--on-fill); display: inline-grid;
+  place-items: center; font-size: 0.66rem; font-weight: 700; }
 .hero-kicker { font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
 .hero-title { font-size: 1.9rem; font-weight: 750; color: var(--ink); margin: 2px 0 4px; line-height: 1.2; }
 .hero-meta { color: var(--sub); font-size: 0.92rem; }
@@ -171,7 +174,7 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
   padding: 2px 12px; font-size: 0.82rem; font-weight: 600; }
 .bottom-line { border-left: 4px solid var(--accent); background: var(--panel); border-radius: 0 12px 12px 0;
   padding: 12px 16px; color: var(--ink); line-height: 1.6; margin: 4px 0 16px; }
-.bottom-line .lbl { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); font-weight: 700; display: block; }
+.bottom-line .lbl { font-size: 0.85rem;  color: var(--accent); font-weight: 700; display: block; }
 
 /* ---- Section and KPI cards ---- */
 .sec-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
@@ -215,7 +218,7 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 @media (max-width: 640px) { .findings { grid-template-columns: 1fr; } }
 .finding { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 12px;
   padding: 12px 14px; color: var(--ink); line-height: 1.5; }
-.finding .area { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--accent); }
+.finding .area { font-size: 0.85rem;  font-weight: 700; color: var(--accent); }
 .finding .hl { font-weight: 650; font-size: 0.97rem; margin: 4px 0; }
 .finding .dt { color: var(--sub); font-size: 0.86rem; }
 .prio { display: inline-block; font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; }
@@ -223,7 +226,7 @@ input::placeholder, textarea::placeholder { color: var(--sub) !important; opacit
 .prio.P3 { background: var(--panel2); color: var(--sub); }
 .qgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
 .qcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; line-height: 1.55; color: var(--ink); font-size: 0.95rem; }
-.qcard .lbl { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+.qcard .lbl { display: block; font-size: 0.85rem;  font-weight: 700; margin-bottom: 2px; }
 .qcard.find .lbl { color: var(--accent); }
 .qcard.act .lbl { color: var(--watch); }
 .qcard b { color: var(--ink); }
@@ -317,15 +320,15 @@ def join_names(names) -> str:
 
 
 def tab_intro(title: str, sub: str, questions: str) -> None:
-    st.markdown(f'<div class="tab-intro"><div><div class="ti-title">{title}</div><div class="ti-sub">{sub}</div></div>'
-                f'<div class="ti-qs">{questions}</div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="tab-intro"><div><div class="ti-title">{title}</div><div class="ti-sub">{sub}</div></div></div>',
+                unsafe_allow_html=True)
 
 
 def qblock(tag: str, title: str, finding: str, action: str = "") -> None:
     cards = f'<div class="qcard find"><span class="lbl">Finding</span>{finding}</div>'
     if action:
         cards += f'<div class="qcard act"><span class="lbl">PM action</span>{action}</div>'
-    st.markdown(f'<div class="qblock"><div class="qtag">{tag}</div><div class="qtitle">{title}</div>'
+    st.markdown(f'<div class="qblock"><div class="qtitle">{title}</div>'
                 f'<div class="qgrid">{cards}</div></div>', unsafe_allow_html=True)
 
 
@@ -546,14 +549,13 @@ def header(K: dict | None) -> None:
     if K:
         period = f"{m.nice_date(K['first_date'])} to {m.nice_date(K['last_date'])}"
         of_all = f" of {len(df_all)}" if K['trips'] != len(df_all) else ""
-        meta = (f"Weekly business review · <b>{period}</b> · {K['trips']}{of_all} trips · {K['routes']} "
-                f"route{'s' if K['routes'] != 1 else ''} · {K['buses']} bus{'es' if K['buses'] != 1 else ''}"
-                f"<br>Source: {source_label} · Prepared by {SENDER_NAME}")
+        meta = (f"Weekly business review for <b>{period}</b>: {K['trips']}{of_all} trips on {K['routes']} "
+                f"route{'s' if K['routes'] != 1 else ''}, {K['buses']} bus{'es' if K['buses'] != 1 else ''}. "
+                f"Refreshed weekly.<br>Data: {source_label}. Prepared by {SENDER_NAME}.")
     else:
         meta = "Weekly business review"
-    filt = (f'<div class="scope-pill">Pilot view: {K["days"]} days, {K["trips"]} trips · refreshes weekly</div>' if K else "")
-    filt += f'<div class="filt">Filtered view: {" · ".join(active)}</div>' if active else ""
-    st.markdown(f'<div class="hero"><div class="hero-kicker">Fresh Bus · Intercity operations</div>'
+    filt = f'<div class="filt">Filtered: {", ".join(active)}</div>' if active else ""
+    st.markdown(f'<div class="hero"><div class="hero-brand"><span class="hb-mark">FB</span>Fresh Bus</div>'
                 f'<div class="hero-title">{DASHBOARD_NAME}</div><div class="hero-meta">{meta}</div>{filt}</div>',
                 unsafe_allow_html=True)
 
@@ -583,8 +585,8 @@ bad_buses = BUS[BUS["Breakdowns"] >= 2]["Bus"].tolist() if not BUS.empty else []
 with st.sidebar:
     st.markdown("### Weekly report")
     st.caption("Emails this week's summary to Udbhav, built from the filters above.")
-    st.link_button("📧 Email report to Udbhav", m.mailto_link(SUBJECT, BODY), type="primary", use_container_width=True)
-    st.link_button("✉️ Open in Gmail instead", m.gmail_link(SUBJECT, BODY), use_container_width=True)
+    st.link_button("Email report to Udbhav", m.mailto_link(SUBJECT, BODY), type="primary", use_container_width=True)
+    st.link_button("Open in Gmail instead", m.gmail_link(SUBJECT, BODY), use_container_width=True)
 
 # ==========================================================================
 # Header, bottom line and network scorecard
@@ -606,7 +608,7 @@ PLAN = m.action_plan(df)
 REVIEW_DAY = m.review_date(K["last_date"])
 
 st.markdown(f'<div class="sec-head"><div class="sec-title">Network scorecard</div>'
-            f'<div class="sec-scope">Totals for {SCOPE} · status against proposed targets</div></div>',
+            f'<div class="sec-scope">{PERIOD}, against proposed targets</div></div>',
             unsafe_allow_html=True)
 
 
@@ -619,18 +621,18 @@ st.markdown('<div class="kpi-grid">' + "".join([
     kpi("Revenue", "Ticket sales across all trips", m.inr_short(K["revenue"]), "na",
         f"{m.inr(K['avg_fare'])} average fare"),
     kpi("Contribution profit", "Revenue minus energy, toll and crew cost, before fixed costs", m.inr_short(K["profit"]),
-        m.status("margin_pct", K["margin_pct"]), f"{m.pct(K['margin_pct'])} contribution margin · target {m.TARGETS['margin_pct']:.0f}%"),
+        m.status("margin_pct", K["margin_pct"]), f"{m.pct(K['margin_pct'])} contribution margin, target {m.TARGETS['margin_pct']:.0f}%"),
     kpi("Seat occupancy", "Seats sold ÷ seats offered", m.pct(K["occupancy_pct"]),
         m.status("occupancy_pct", K["occupancy_pct"]), f"target {m.TARGETS['occupancy_pct']:.0f}%"),
     kpi("On-time arrival", f"Trips arriving within {m.ON_TIME_MIN} min of schedule", m.pct(K["on_time_pct"]),
         m.status("on_time_pct", K["on_time_pct"]), f"target {m.TARGETS['on_time_pct']:.0f}%"),
     kpi("Customer rating", "Average post-trip rating, 1 to 5", f"{m.num(K['avg_rating'])}",
-        m.status("avg_rating", K["avg_rating"]), f"NPS proxy {m.nps_style_str(K['nps_style'])} · target {m.TARGETS['avg_rating']}"),
+        m.status("avg_rating", K["avg_rating"]), f"NPS proxy {m.nps_style_str(K['nps_style'])}, target {m.TARGETS['avg_rating']}"),
     kpi("Breakdown rate", "Trips with a breakdown ÷ trips run", m.pct(K["breakdown_rate_pct"]),
-        m.status("breakdown_rate_pct", K["breakdown_rate_pct"]), f"{K['breakdowns']} of {K['trips']} trips · target 0%"),
+        m.status("breakdown_rate_pct", K["breakdown_rate_pct"]), f"{K['breakdowns']} of {K['trips']} trips, target 0%"),
 ]) + "</div>", unsafe_allow_html=True)
 
-st.markdown('<div class="tabs-label">Explore the analysis · click a section</div>', unsafe_allow_html=True)
+st.markdown('<div class="tabs-label">Choose a section</div>', unsafe_allow_html=True)
 tabs = st.tabs(["Overview", "Revenue", "Demand and capacity", "Operations", "Customer experience",
                 "KPI framework", "Weekly review"])
 
@@ -640,12 +642,12 @@ tabs = st.tabs(["Overview", "Revenue", "Demand and capacity", "Operations", "Cus
 with tabs[0]:
     tab_intro("Where to act this week", "Key findings, the decisions needed, and every route on one map.",
               "Summary of Part A · Part B recommendations")
-    chart_head("Key findings", f"One headline per area for {PERIOD}. Each tab has the detail.")
+    chart_head("Key findings", "One line per area. Each section has the detail.")
     st.markdown('<div class="findings">' + "".join(
         f'<div class="finding"><div class="area">{f["area"]}</div><div class="hl">{f["headline"]}</div><div class="dt">{f["detail"]}</div></div>'
         for f in FINDINGS) + "</div>", unsafe_allow_html=True)
     decisions = [p for p in PLAN if p.get("decision")]
-    chart_head("Decisions required", f"For leadership at the {m.short_date(REVIEW_DAY)} review. The full action tracker is in the Weekly review tab.")
+    chart_head("Decisions required", f"For the {m.short_date(REVIEW_DAY)} review. The full tracker is in Weekly review.")
     if decisions:
         html_table(["Priority", "Decision", "Why now", "Owner", "Due", "Expected impact"],
                    [[f'<span class="prio {p["priority"]}">{p["priority"]}</span>', f"<b>{p['decision']}</b>", p["problem"],
@@ -654,8 +656,7 @@ with tabs[0]:
         st.markdown('<div class="note">No leadership decisions are needed for this selection.</div>', unsafe_allow_html=True)
 
     chart_head("Route portfolio map",
-               "Across: share of seats sold. Up: profit per trip. Bubble size: revenue. "
-               "Top right is where to add buses; bottom left is where to fix first.")
+               "Top right: add buses. Bottom left: fix first. Bubble size is revenue.")
     fig = go.Figure()
     sizes = R["Revenue"].astype(float)
     sizeref = 2.0 * sizes.max() / (46 ** 2) if sizes.max() else 1
@@ -717,7 +718,7 @@ with tabs[0]:
                      showgrid=True, gridcolor=T["grid"], title="Profit per trip")
     show(style(fig, 470, legend=True), "portfolio")
 
-    chart_head("Route scorecard", f"One row per route for {PERIOD}. Highest revenue first; click a heading to re-sort")
+    chart_head("Route scorecard", "Click a column heading to sort.")
     occ_max = 100
     rows = []
     for _, r in R.iterrows():
@@ -738,7 +739,7 @@ with tabs[0]:
     if len(DAILY) > 1:
         c1, c2 = st.columns(2)
         with c1:
-            chart_head("Revenue by day", "Ticket revenue per day, all selected routes")
+            chart_head("Revenue by day", "All selected routes")
             fig = go.Figure(go.Bar(
                 x=DAILY["Date"], y=DAILY["Revenue"], marker=dict(color=T["accent"]),
                 text=[m.inr_short(x) for x in DAILY["Revenue"]], textposition="outside", cliponaxis=False,
@@ -748,7 +749,7 @@ with tabs[0]:
             fig.update_yaxes(showticklabels=False, range=[0, DAILY["Revenue"].max() * 1.25])
             show(style(fig, 280), "daily_rev")
         with c2:
-            chart_head("Rating and breakdowns by day", "Average rating (line); trips with a breakdown (labels)")
+            chart_head("Rating and breakdowns by day", "⚠ marks the day's breakdowns")
             fig = go.Figure(go.Scatter(
                 x=DAILY["Date"], y=DAILY["Avg rating"], mode="lines+markers+text",
                 line=dict(color=T["accent"], width=2.5), marker=dict(size=9, color=T["accent"]),
@@ -799,7 +800,7 @@ with tabs[1]:
            + (f". It beats {top['Route']} on profit because its energy and toll costs are lower." if best["Route"] != top["Route"] else "."),
            "Use profit per trip, not revenue, to decide where the next bus goes.")
     chart_head("Revenue and contribution profit by route",
-               f"₹ for {PERIOD}. The second bar shows contribution profit and its margin.")
+               "Second bar is contribution profit, with its margin.")
     fig = go.Figure()
     fig.add_trace(go.Bar(
         y=by_rev["Route"], x=by_rev["Profit"], name="Contribution profit", orientation="h",
@@ -828,7 +829,7 @@ with tabs[1]:
            "Treat this as a bus earning less than it could elsewhere. Fix reliability first, then test pricing "
            "and marketing; if a route stays below average after 4 weeks, move the bus.")
     chart_head("Profit per trip compared with the network average",
-               f"₹ above or below {m.inr(avg_ppt)} per trip. Red is below average.")
+               f"Gap to the {m.inr(avg_ppt)} average. Red is below.")
     d = R.assign(gap=R["Profit per trip"] - avg_ppt).sort_values("gap", ascending=False)
     cols = [T["good"] if g >= 0 else T["bad"] for g in d["gap"]]
     fig = go.Figure(go.Bar(
@@ -874,8 +875,7 @@ with tabs[2]:
         return (T["good"], "Excess demand") if x >= m.SEATS_EXCESS else (T["bad"], "Low") if x < m.SEATS_LOW else (T["watch"], "Healthy")
 
     bands = [band(x) for x in by_occ["Occupancy %"]]
-    chart_head("Seat occupancy by route", f"Seats sold ÷ seats offered, {PERIOD}. Shaded zones: under "
-               f"{m.SEATS_LOW:.0f}% is low, {m.SEATS_EXCESS:.0f}% and above is excess demand.")
+    chart_head("Seat occupancy by route", f"Under {m.SEATS_LOW:.0f}% is low. {m.SEATS_EXCESS:.0f}% and above is excess demand.")
     fig = go.Figure(go.Bar(
         y=by_occ["Route"], x=by_occ["Occupancy %"], orientation="h", marker=dict(color=[b[0] for b in bands]),
         text=[f"{x:.1f}% · {b[1]}" for x, b in zip(by_occ["Occupancy %"], bands)],
@@ -896,7 +896,7 @@ with tabs[2]:
     pv = pv.reindex([r for r in by_occ["Route"] if r in pv.index])
     sold = sold.reindex(index=pv.index, columns=pv.columns)
     if pv.shape[1] > 1:
-        chart_head("Occupancy by route and day", "Is the pattern steady or a one-off? Darker squares are fuller buses.")
+        chart_head("Occupancy by route and day", "Darker means fuller.")
         fig = go.Figure(go.Heatmap(
             z=pv.values, x=[f"{d.day} {d:%b}" for d in pv.columns], y=pv.index,
             colorscale=[[0, T["heat"][0]], [0.5, T["heat"][1]], [1, T["heat"][2]]], zmin=40, zmax=100,
@@ -931,8 +931,7 @@ with tabs[3]:
            if not late.empty else f"Every route arrives within {m.LATE_ROUTE_MIN:.0f} minutes on average.",
            "Most of the delay starts at the depot. Set a boarding cut-off, earlier crew reporting and a turnaround buffer.")
     chart_head("Departure delay vs arrival delay by route",
-               "Each line runs from minutes late leaving (first dot) to minutes late arriving (second dot). "
-               "A longer line means more time lost on the road.")
+               "Left dot: minutes late leaving. Right dot: minutes late arriving.")
     LEFT_C, ARR_C = ("#60A5FA", T["series2"]) if theme_name == "Dark" else ("#2563EB", T["series2"])
     fig = go.Figure()
     lx, ly = [], []
@@ -962,7 +961,7 @@ with tabs[3]:
     st.markdown('<div class="stat-row">'
                 f'<div class="stat"><div class="v">{K["cancellations"]}</div><div class="l">Trips cancelled</div></div>'
                 f'<div class="stat"><div class="v">{K["trips"]}</div><div class="l">Trips scheduled</div></div>'
-                f'<div class="stat"><div class="v">{m.pct(K["cancel_pct"])}</div><div class="l">Cancellation rate · target under 1%</div></div>'
+                f'<div class="stat"><div class="v">{m.pct(K["cancel_pct"])}</div><div class="l">Cancellation rate, target under 1%</div></div>'
                 '</div>', unsafe_allow_html=True)
     if K["cancellations"] > 0:
         by_can = R.sort_values("Cancellation %", ascending=False)
@@ -983,7 +982,7 @@ with tabs[3]:
                f"broke down on 2 or more trips. That points to vehicle condition, not the road." if bad_buses else "."))
            if not bd_routes.empty else "No breakdowns in this selection.",
            "Ground the flagged buses for inspection now, and add a pre-trip checklist on these routes.")
-    chart_head("Breakdowns by bus", "Every bus in the selection. Red buses broke down on 2 or more trips.")
+    chart_head("Breakdowns by bus", "Red: broke down on 2 or more trips.")
     b = BUS.sort_values(["Breakdowns", "Avg arrival delay (min)"], ascending=[True, True])
     bcol = [T["bad"] if x >= 2 else T["watch"] if x == 1 else T["muted"] for x in b["Breakdowns"]]
     fig = go.Figure(go.Bar(
@@ -1014,7 +1013,7 @@ with tabs[4]:
             f"({by_rating.sort_values('NPS proxy').iloc[0]['Route']}).")
            if not poor.empty else f"No route averages below {m.LOW_RATING} stars.",
            "Send delay alerts and automatic partial refunds on trips more than 30 minutes late, starting on these routes.")
-    chart_head("Average customer rating by route", f"Post-trip rating, 1 to 5. Dashed line: target {m.TARGETS['avg_rating']}.")
+    chart_head("Average customer rating by route", f"Dashed line: target {m.TARGETS['avg_rating']}.")
 
     def rcol(x):
         return T["bad"] if x < m.LOW_RATING else T["watch"] if x < 4.0 else T["accent"] if x < m.TARGETS["avg_rating"] else T["good"]
@@ -1069,7 +1068,7 @@ with tabs[4]:
             fig.update_yaxes(title="Rating", range=[2, 5.1], showgrid=True, gridcolor=T["grid"], tickfont=dict(color=T["sub"]))
             show(style(fig, 380, legend=True), "scatter")
         with c2:
-            chart_head("How strongly each metric moves with rating", "Correlation from -1 to +1 across all trips")
+            chart_head("How strongly each metric moves with rating", "Correlation, −1 to +1")
             dd = DRV.sort_values("Correlation")
             colors = [T["muted"] if s == "Weak" else T["bad"] if r < 0 else T["accent"]
                       for r, s in zip(dd["Correlation"], dd["Strength"])]
@@ -1102,7 +1101,7 @@ def kpi_rows(rows: list[tuple]) -> list[list[str]]:
 KPI_HEAD = ["Metric", "Definition", "Why it matters", "This week", "Target", "Status"]
 with tabs[5]:
     tab_intro("KPI framework", "What each leader should watch, why, and where we stand this week.", "Part B · 4 audiences")
-    st.markdown('<div class="chart-title">North star metrics · CEO</div>', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">North star metrics for the CEO</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
         ("Contribution profit and margin", "Revenue minus energy, toll and crew, before fixed costs; ₹ and % of revenue",
          "Shows whether growth is profitable", f"{m.inr_short(K['profit'])} · {m.pct(K['margin_pct'])}", "65%+",
@@ -1116,7 +1115,7 @@ with tabs[5]:
         ("NPS proxy (from ratings)", f"% of trips rated 4.5+ minus % rated below 3.5. Not a survey NPS; replace once NPS is collected", "Early signal of repeat trips and referrals",
          f"{m.nps_style_str(K['nps_style'])} (rating {m.num(K['avg_rating'])})", "50+", m.status("nps_style", K["nps_style"])),
     ]), num_cols={3, 4}, wrap_cols={1, 2})
-    st.markdown('<div class="chart-title">Operational metrics · Operations Head</div>', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">Operational metrics for the Operations Head</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
         ("Departure delay", "Average minutes late leaving", "Fully in our control: crew, boarding, turnaround",
          m.mins(K["avg_dep_delay_min"]), "Under 5 min", m.status("avg_dep_delay_min", K["avg_dep_delay_min"])),
@@ -1135,7 +1134,7 @@ with tabs[5]:
         ("Fleet availability", "Buses fit to run ÷ fleet, incl. charger uptime", "Sets how fast we can add departures",
          "Next: from depot log", "95%+", "na"),
     ]), num_cols={3, 4}, wrap_cols={1, 2})
-    st.markdown('<div class="chart-title">Commercial metrics · Revenue team</div>', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">Commercial metrics for the Revenue team</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
         ("Revenue and profit by route", "Weekly totals per route", "Shows where to invest and where to cut",
          m.inr_short(K["revenue"]), "Up each week", "na"),
@@ -1148,7 +1147,7 @@ with tabs[5]:
         ("Trips under 60% full", "Trips with fewer than 24 seats sold", "Flags routes needing price or schedule changes",
          m.pct(K["empty_trips_pct"]), "Under 10%", "good" if K["empty_trips_pct"] < 10 else "bad"),
     ]), num_cols={3, 4}, wrap_cols={1, 2})
-    st.markdown('<div class="chart-title">Customer metrics · CX team</div>', unsafe_allow_html=True)
+    st.markdown('<div class="chart-title">Customer metrics for the CX team</div>', unsafe_allow_html=True)
     html_table(KPI_HEAD, kpi_rows([
         ("NPS proxy (from ratings)", "Rating-based stand-in for % promoters minus % detractors", "Best single predictor of repeat and referral",
          f"{m.nps_style_str(K['nps_style'])} ({m.pct(K['promoters_pct'], 0)} rated 4.5+, {m.pct(K['detractors_pct'], 0)} below 3.5)",
@@ -1191,8 +1190,8 @@ with tabs[6]:
             ["5 min", "Decisions and owners"],
         ], wrap_cols={1})
         st.markdown('<div class="note"><b>Red flags that force a discussion:</b> a route under 70% full for 2 weeks '
-                    'or over 90% full · a route over 15 min late on average · any bus with 2+ breakdowns · '
-                    'a route rated under 3.5 · any cancellation.</div>', unsafe_allow_html=True)
+                    'or over 90% full; a route over 15 min late on average; any bus with 2+ breakdowns; '
+                    'a route rated under 3.5; any cancellation.</div>', unsafe_allow_html=True)
 
     # ---- Week on week ----
     last = df["Trip_Date"].max()
@@ -1237,17 +1236,17 @@ with tabs[6]:
                 '<div class="chart-sub">Built from the data and filters in the sidebar. Choose how to send it.</div>',
                 unsafe_allow_html=True)
     b1, b2, b3 = st.columns(3)
-    b1.link_button("📧 Email to udbhav@freshbus.com", m.mailto_link(SUBJECT, BODY), type="primary",
+    b1.link_button("Email to udbhav@freshbus.com", m.mailto_link(SUBJECT, BODY), type="primary",
                    use_container_width=True, help="Opens your email app with the report ready.")
-    b2.link_button("✉️ Open in Gmail", m.gmail_link(SUBJECT, BODY), use_container_width=True,
+    b2.link_button("Open in Gmail", m.gmail_link(SUBJECT, BODY), use_container_width=True,
                    help="Opens a Gmail draft in a new tab.")
-    b3.download_button("⬇️ Download report", data=f"Subject: {SUBJECT}\n\n{BODY}",
+    b3.download_button("Download report", data=f"Subject: {SUBJECT}\n\n{BODY}",
                        file_name=f"freshbus_weekly_review_{K['last_date']:%Y-%m-%d}.txt", mime="text/plain",
                        use_container_width=True)
 
     smtp = secret("smtp")
     if smtp:
-        if st.button("🚀 Send now (no email app needed)", use_container_width=True):
+        if st.button("Send now (no email app needed)", use_container_width=True):
             try:
                 msg = EmailMessage()
                 msg["Subject"], msg["To"] = SUBJECT, m.REPORT_TO
