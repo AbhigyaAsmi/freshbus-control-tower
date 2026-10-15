@@ -56,21 +56,21 @@ SENDER_NAME = secret("app", "sender_name", "Abhigya Asmi Pandey")
 THEMES = {
     "Dark": dict(
         bg="#0B1220", panel="#121C2E", panel2="#18243A", line="#243250", ink="#E8EEF7", sub="#9AA8BF",
-        muted="#3A4A66", accent="#2DD4BF", series2="#FBBF24",
+        muted="#3A4A66", accent="#5B95F9", series2="#FBBF24",
         good="#22C55E", watch="#F59E0B", bad="#F05252",
         good_t="#4ADE80", watch_t="#FBBF24", bad_t="#F87171",
         good_bg="rgba(34,197,94,0.14)", watch_bg="rgba(245,158,11,0.14)", bad_bg="rgba(240,82,82,0.14)",
-        heat=["#16223A", "#134E4A", "#0F766E"], heat_text="#E8EEF7", grid="#1E2A44",
-        hero="#0F2733", on_fill="#0B1220",
+        heat=["#16223A", "#143C85", "#2F6FE0"], heat_text="#E8EEF7", grid="#1E2A44",
+        hero="#0D2147", on_fill="#0B1220",
     ),
     "Light": dict(
-        bg="#F4F7F6", panel="#FFFFFF", panel2="#F7FAF9", line="#DDE6E3", ink="#0B1F1C", sub="#55706A",
-        muted="#C5D3CF", accent="#0F766E", series2="#D97706",
+        bg="#F4F6FA", panel="#FFFFFF", panel2="#F7F9FD", line="#DCE3EF", ink="#0B1A33", sub="#55627A",
+        muted="#C5CFDE", accent="#095FF0", series2="#D97706",
         good="#16A34A", watch="#D97706", bad="#DC2626",
         good_t="#15803D", watch_t="#B45309", bad_t="#B91C1C",
         good_bg="#DCFCE7", watch_bg="#FEF3C7", bad_bg="#FEE2E2",
-        heat=["#F0FAF8", "#99DCD1", "#4FB8AA"], heat_text="#0B1F1C", grid="#E6EEEC",
-        hero="#E3F2EF", on_fill="#FFFFFF",
+        heat=["#EEF3FE", "#A9C6FA", "#5C93F4"], heat_text="#0B1A33", grid="#E5EAF3",
+        hero="#E7EFFE", on_fill="#FFFFFF",
     ),
 }
 
