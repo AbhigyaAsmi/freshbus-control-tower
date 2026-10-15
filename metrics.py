@@ -20,8 +20,8 @@ ON_TIME_MIN = 15           # a trip is on time if it arrives within this many mi
 LATE_ROUTE_MIN = 15.0      # a route is "late" if its average arrival delay is above this
 LOW_RATING = 3.5           # a trip or route below this rating is poorly rated
 EXTRA_TRIP_LOAD = 30       # seats assumed sold on a new extra departure (75% of 40)
-PROMOTER_MIN = 4.5         # NPS-style score: a trip rated this or higher counts as a promoter
-DETRACTOR_BELOW = 3.5      # NPS-style score: a trip rated below this counts as a detractor
+PROMOTER_MIN = 4.5         # NPS proxy (from ratings): a trip rated this or higher counts as a promoter
+DETRACTOR_BELOW = 3.5      # NPS proxy (from ratings): a trip rated below this counts as a detractor
 
 TARGETS = {
     "margin_pct": 65.0,
@@ -151,7 +151,7 @@ def network_kpis(df: pd.DataFrame) -> dict:
 
 
 def nps_style(ratings: pd.Series) -> float:
-    """NPS-style score from star ratings: % rated 4.5+ minus % rated below 3.5 (range -100 to +100)."""
+    """NPS proxy from star ratings, not survey responses: % rated 4.5+ minus % rated below 3.5 (range -100 to +100)."""
     r = ratings.dropna()
     if not len(r):
         return np.nan
@@ -206,7 +206,7 @@ def route_table(df: pd.DataFrame) -> pd.DataFrame:
             "Cancelled": int(g["Cancelled"].sum()),
             "Cancellation %": 100 * g["Cancelled"].mean(),
             "Rating": ran["Customer_Rating"].mean(),
-            "NPS-style": nps_style(ran["Customer_Rating"]),
+            "NPS proxy": nps_style(ran["Customer_Rating"]),
             "Demand": ("Excess demand" if occ >= SEATS_EXCESS
                        else "Low occupancy" if occ < SEATS_LOW else "Healthy"),
             "Reliable": reliable,
@@ -405,8 +405,13 @@ def short_date(t) -> str:
     return f"{t:%a} {t.day} {t:%b}"
 
 
+def next_review_on_or_after(d) -> pd.Timestamp:
+    d = pd.Timestamp(d).normalize()
+    return d + pd.Timedelta(days=(7 - d.weekday()) % 7)
+
+
 def action_plan(df: pd.DataFrame) -> list[dict]:
-    """This week's actions with owner, due date and the metric each should move."""
+    """This week's actions, in priority order, with the problem, owner, due date, success measure and review date."""
     k = network_kpis(df)
     routes = route_table(df)
     buses = bus_table(df)
@@ -417,42 +422,107 @@ def action_plan(df: pd.DataFrame) -> list[dict]:
     plan = []
     if not bad_bus.empty:
         ids = bad_bus["Bus"].tolist()
+        n_bd = int(bad_bus["Breakdowns"].sum())
         plan.append(dict(
-            action=f"Inspect {' and '.join(ids)} (battery, drivetrain, charging logs) and swap in healthy buses until cleared",
+            priority="P1",
+            problem=(f"{' and '.join(ids)} broke down on {n_bd} of {int(bad_bus['Trips'].sum())} trips, "
+                     f"{n_bd} of the network's {k['breakdowns']} breakdowns"),
+            action=f"Inspect {' and '.join(ids)} (battery, drivetrain, charging logs); run healthy buses until cleared",
             owner="Operations Head", due=mon + pd.Timedelta(days=2),
-            why="; ".join(f"{r['Bus']}: {r['Breakdowns']} of {r['Trips']} trips" for _, r in bad_bus.iterrows()),
-            measure="Breakdown rate to 0%", decision=f"Take {' and '.join(ids)} off the road for inspection"))
+            measure="Zero breakdowns on these buses for 4 weeks",
+            impact=f"Removes {n_bd} of {k['breakdowns']} breakdowns",
+            why=f"Together they caused {n_bd} of the {k['breakdowns']} breakdowns, breaking down on every trip they ran",
+            decision=f"Take {' and '.join(ids)} off the road for inspection"))
+    if not fix.empty:
+        f2 = fix.head(2)
+        names = f2["Route"].tolist()
+        plan.append(dict(
+            priority="P1",
+            problem=(f"{' and '.join(names)} arrive {f2['Arrival delay (min)'].min():.0f} to {f2['Arrival delay (min)'].max():.0f} min late; "
+                     f"most of it starts before departure ({f2['Departure delay (min)'].min():.0f} to {f2['Departure delay (min)'].max():.0f} min)"),
+            action="Departure-discipline drive: boarding cut-off, earlier crew reporting, charge-ready check the night before",
+            owner="Operations Head", due=mon + pd.Timedelta(days=7),
+            measure="Departure delay under 5 min; on-time arrival above 80% on these routes",
+            impact="Each 10 min saved is worth about half a star in rating",
+            why=(f"They arrive {f2['Arrival delay (min)'].min():.0f} to {f2['Arrival delay (min)'].max():.0f} min late, and "
+                 f"{f2['Departure delay (min)'].min():.0f} to {f2['Departure delay (min)'].max():.0f} min of that happens before the bus leaves. "
+                 "That part is fully in our control"),
+            decision=f"Back an on-time push on {' and '.join(names)}"))
     if not cap.empty:
         c = cap.iloc[0]
         r = routes[routes["Route"] == c["Route"]].iloc[0]
         plan.append(dict(
-            action=f"Pilot one extra daily departure on {c['Route']} for 4 weeks, after checking sold-out dates and a spare bus",
+            priority="P2",
+            problem=f"{c['Route']} runs {pct(r['Occupancy %'], 0)} full and on time, so riders are likely being turned away",
+            action=(f"Pilot one extra daily departure on {c['Route']} for 4 weeks, after confirming sold-out dates and a spare bus. "
+                    f"Costs {inr(c['Cost per trip'])} a trip; breaks even at {c['Break-even seats']:.0f} of 40 seats"),
             owner="Revenue Head", due=mon + pd.Timedelta(days=7),
-            why=(f"{pct(r['Occupancy %'], 0)} full, rating {num(r['Rating'])}. Costs {inr(c['Cost per trip'])} a trip and "
-                 f"breaks even at {c['Break-even seats']:.0f} of 40 seats. At 30 seats: about {inr_short(c['Monthly upside (30 days)'])} "
-                 "over 30 days (projection)"),
             measure="New trip 75%+ full; existing trips stay 85%+",
+            impact=f"About {inr_short(c['Monthly upside (30 days)'])} extra profit over 30 days (projection)",
+            why=(f"It runs {pct(r['Occupancy %'], 0)} full and on time. An extra trip breaks even at {c['Break-even seats']:.0f} of 40 seats "
+                 f"and adds about {inr_short(c['Monthly upside (30 days)'])} over 30 days if it sells 30"),
             decision=f"Approve a 4-week pilot departure on {c['Route']}"))
     if not fix.empty:
-        names = fix["Route"].tolist()[:2]
-        plan.append(dict(
-            action=f"Departure-discipline drive on {' and '.join(names)}: boarding cut-off, earlier crew reporting, charge-ready check the night before",
-            owner="Operations Head", due=mon + pd.Timedelta(days=7),
-            why="Most of the delay starts before the bus leaves",
-            measure="Departure delay under 5 min",
-            decision=f"Back an on-time push on {' and '.join(names)}"))
         w = fix.iloc[0]
         plan.append(dict(
-            action=f"Pause paid demand campaigns on {w['Route']} until punctuality is fixed; restart after the 4-week check",
+            priority="P2",
+            problem=f"{w['Route']} earns {inr(w['Profit per trip'])} a trip vs {inr(k['profit_per_trip'])} network average, at {pct(w['Occupancy %'], 0)} full",
+            action=f"Hold paid demand campaigns on {w['Route']} until punctuality is fixed; restart after the 4-week check",
             owner="CEO", due=mon + pd.Timedelta(days=28),
-            why=f"Earns {inr(w['Profit per trip'])} a trip vs {inr(k['profit_per_trip'])} network average",
-            measure="Occupancy above 70%", decision=None))
+            measure="Occupancy above 70% after the reliability fix",
+            impact="Avoids spending to attract riders to a late service",
+            decision=None))
     plan.append(dict(
+        priority="P3",
+        problem="Satisfaction is tracked only through star ratings; no survey NPS or complaint reasons",
         action="Add a one-question NPS survey and complaint reasons to the post-trip message",
         owner="CX lead", due=mon + pd.Timedelta(days=14),
-        why="Turns the star rating into a true NPS and tells us what to fix",
-        measure="NPS captured on 50%+ of trips", decision=None))
+        measure="Survey NPS captured on 50%+ of trips",
+        impact="Replaces the NPS proxy with real NPS and shows what to fix",
+        decision=None))
+    for p in plan:
+        p["status"] = "Not started"
+        p["next_review"] = next_review_on_or_after(p["due"])
     return plan
+
+
+def key_findings(df: pd.DataFrame) -> list[dict]:
+    """One headline finding per Part A area, with the number behind it."""
+    k = network_kpis(df)
+    routes = route_table(df)
+    buses = bus_table(df)
+    slope = delay_rating_slope(df)
+    out = []
+    top = routes.head(3)
+    best = routes.sort_values("Profit", ascending=False).iloc[0]
+    out.append(dict(area="Revenue", headline=(
+        f"{'The top ' + str(len(top)) + ' routes bring' if len(top) > 1 else 'This route brings'} {pct(top['Revenue'].sum() / max(k['revenue'], 1) * 100, 0)} of revenue and "
+        f"{pct(top['Profit'].sum() / max(k['profit'], 1) * 100, 0)} of contribution profit."),
+        detail=f"{best['Route']} keeps the most: {inr_short(best['Profit'])} at {pct(best['Margin %'], 0)} margin."))
+    full = routes[routes["Occupancy %"] >= SEATS_EXCESS]
+    low = routes[routes["Occupancy %"] < SEATS_LOW]
+    dem = []
+    if not full.empty:
+        dem.append(f"{len(full)} route{'s' if len(full) != 1 else ''} {'run' if len(full) != 1 else 'runs'} "
+                   f"{pct(full['Occupancy %'].min(), 0)} to {pct(full['Occupancy %'].max(), 0)} full")
+    if not low.empty:
+        dem.append(f"{len(low)} {'run' if len(low) != 1 else 'runs'} {pct(low['Occupancy %'].min(), 0)} to {pct(low['Occupancy %'].max(), 0)} full")
+    out.append(dict(area="Demand", headline=("; ".join(dem) + ".") if dem else f"Network occupancy is {pct(k['occupancy_pct'], 0)}.",
+                    detail="Full routes are the reliable ones, so supply follows service quality."))
+    share = (100 * k["avg_dep_delay_min"] / k["avg_arr_delay_min"]
+             if k["avg_arr_delay_min"] and k["avg_arr_delay_min"] > 0 and k["avg_dep_delay_min"] >= 0 else np.nan)
+    share = min(share, 100) if not np.isnan(share) else share
+    bd_bus = buses[buses["Breakdowns"] >= 2] if not buses.empty else buses
+    ops_detail = (f"{int(bd_bus['Breakdowns'].sum())} of {k['breakdowns']} breakdowns sit on {len(bd_bus)} buses. "
+                  if not bd_bus.empty else f"{k['breakdowns']} breakdowns. ") + ("No cancellations in the period." if k["cancellations"] == 0 else f"{k['cancellations']} cancellations.")
+    out.append(dict(area="Operations", headline=(
+        f"{pct(k['on_time_pct'], 0)} of trips arrive on time. About {pct(share, 0)} of the delay starts before departure."
+        if not np.isnan(share) else f"{pct(k['on_time_pct'], 0)} of trips arrive on time."), detail=ops_detail))
+    cx = (f"Each 10 min late goes with about {abs(slope[0]) * 10:.1f} stars lower. " if slope else "")
+    out.append(dict(area="Customer", headline=cx + f"Average rating {num(k['avg_rating'])}.",
+                    detail=(f"NPS proxy by route ranges from {nps_style_str(routes['NPS proxy'].max())} to "
+                            f"{nps_style_str(routes['NPS proxy'].min())}.")))
+    return out
 
 
 def ceo_brief(df: pd.DataFrame) -> dict:
@@ -476,69 +546,86 @@ def ceo_brief(df: pd.DataFrame) -> dict:
     return dict(win=win, decisions=decisions, watch=watch)
 
 
+def short_period(a, b) -> str:
+    a, b = pd.Timestamp(a), pd.Timestamp(b)
+    if a == b:
+        return f"{a.day} {a:%b %Y}"
+    if (a.month, a.year) == (b.month, b.year):
+        return f"{a.day} to {b.day} {b:%b %Y}"
+    return f"{a.day} {a:%b} to {b.day} {b:%b %Y}"
+
+
 def build_report(df: pd.DataFrame, sender: str = "Abhigya Asmi Pandey", dashboard_url: str = "") -> tuple[str, str]:
+    """Weekly review email: short, plain and decision-first."""
     k = network_kpis(df)
     routes = route_table(df)
-    buses = bus_table(df)
-    cap = capacity_case(routes)
-    drivers = rating_drivers(df)
     slope = delay_rating_slope(df)
-
-    period = f"{nice_date(k['first_date'])} to {nice_date(k['last_date'])}"
-    subject = f"Fresh Bus weekly business review: {period}"
+    plan = action_plan(df)
+    decisions = [p for p in plan if p.get("decision")]
+    others = [p for p in plan if not p.get("decision")]
+    period = short_period(k["first_date"], k["last_date"])
+    n_dec = len(decisions)
+    subject = f"Fresh Bus weekly review, {period}" + (f": {n_dec} decision{'s' if n_dec != 1 else ''} needed" if n_dec else "")
 
     scale = routes[routes["Action"] == "Add capacity"].sort_values("Occupancy %", ascending=False)
     fix = routes[~routes["Action"].isin(["Add capacity", "Hold"])].sort_values("Profit per trip")
-    bad_bus = buses[buses["Breakdowns"] >= 2]["Bus"].tolist() if not buses.empty else []
+    hold = routes[routes["Action"] == "Hold"]
 
-    L = [
-        "Hi Udbhav,",
-        "",
-        f"Here is the weekly business review for {period} ({k['trips']} trips, "
-        f"{k['routes']} route{'s' if k['routes'] != 1 else ''}).",
-        "",
-        "1. HEADLINE",
-        f"Revenue: {inr(k['revenue'])}. Contribution profit: {inr(k['profit'])} ({pct(k['margin_pct'])} margin).",
-        f"Seat occupancy: {pct(k['occupancy_pct'])}. On-time arrivals: {pct(k['on_time_pct'])}.",
-        f"Avg rating: {num(k['avg_rating'])} of 5 (NPS-style {nps_style_str(k['nps_style'])}). Breakdowns: {k['breakdowns']} of {k['trips']} trips. "
-        f"Cancellations: {k['cancellations']}.",
-        "",
-        "2. ROUTES TO SCALE",
-    ]
-    if scale.empty:
-        L.append("- None this week.")
-    for _, r in scale.iterrows():
-        L.append(f"- {r['Route']}: {pct(r['Occupancy %'])} full, {pct(r['Margin %'])} margin, "
-                 f"rating {num(r['Rating'])}.")
-    L += ["", "3. ROUTES TO FIX"]
-    if fix.empty:
-        L.append("- None this week.")
-    for _, r in fix.iterrows():
-        L.append(f"- {r['Route']}: {pct(r['Occupancy %'])} full, {mins(r['Arrival delay (min)'])} late on arrival, "
-                 f"{r['Breakdowns']} breakdowns, rating {num(r['Rating'])}.")
-    L += ["", "4. WHAT DRIVES RATINGS"]
-    if not drivers.empty:
-        top = drivers.reindex(drivers["Correlation"].abs().sort_values(ascending=False).index).iloc[0]
-        L.append(f"{top['Metric']} has the strongest link to rating (r = {top['Correlation']:.2f}).")
-    if slope:
-        L.append(f"Each extra 10 minutes of arrival delay goes with a rating about {abs(slope[0]) * 10:.2f} points lower.")
-    if bad_bus:
-        L.append(f"Breakdowns sit on a few buses: {', '.join(bad_bus)} broke down 2 or more times.")
-    L += ["", "5. DECISIONS AND ACTIONS (owner, due)"]
-    for p in action_plan(df):
-        L.append(f"- {p['action']} ({p['owner']}, by {short_date(p['due'])}). Success: {p['measure']}.")
-    L += [
-        "",
-        "6. SCOPE AND NEXT STEPS",
-        f"This review covers {k['days']} days ({k['trips']} trips). The dashboard refreshes each week, "
-        "so trends and week-on-week changes build up from here.",
-        f"Customer view: NPS-style score {nps_style_str(k['nps_style'])} from star ratings "
-        f"({PROMOTER_MIN}+ promoters, below {DETRACTOR_BELOW} detractors), until a true NPS survey is live.",
-        "Profit shown is contribution profit: revenue minus energy, toll and crew cost, before fixed costs.",
-    ]
+    def vs(value: str, target: str) -> str:
+        return f"{value} (target {target})"
+
+    # The short version: three plain sentences
+    short = [f"{'Profit is healthy' if k['margin_pct'] >= 55 else 'Profit needs attention'}: {inr_short(k['profit'])} on "
+             f"{inr_short(k['revenue'])} revenue, a {pct(k['margin_pct'], 0)} margin."]
+    if k["on_time_pct"] < TARGETS["on_time_pct"]:
+        line = f"Punctuality is the main problem: only {pct(k['on_time_pct'], 0)} of trips arrived on time"
+        line += (f", and each 10 minutes late costs about {abs(slope[0]) * 10:.1f} stars in rating." if slope else ".")
+        short.append(line)
+    if not scale.empty:
+        short.append(f"{len(scale)} route{'s are' if len(scale) != 1 else ' is'} full and on time, and can take more buses.")
+
+    L = ["Hi Udbhav,", "", f"Here is the weekly review for {period} ({k['trips']} trips, {k['routes']} route{'s' if k['routes'] != 1 else ''}).", "",
+         "THE SHORT VERSION"]
+    L += [f"- {x}" for x in short]
+
+    L += ["", "NUMBERS VS TARGET",
+          f"- Revenue: {inr_short(k['revenue'])}",
+          f"- Contribution margin: {vs(pct(k['margin_pct']), '65%')}",
+          f"- Seats sold: {vs(pct(k['occupancy_pct']), '80%')}",
+          f"- On-time arrivals: {vs(pct(k['on_time_pct']), '90%')}",
+          f"- Average rating: {vs(num(k['avg_rating']), '4.5')}",
+          "- Breakdowns: " + vs(f"{k['breakdowns']} of {k['trips']} trips", "0"),
+          f"- Cancellations: {k['cancellations']}"]
+
+    L += ["", "ROUTES"]
+    if not scale.empty:
+        L.append("Ready to grow: " + "; ".join(
+            f"{r['Route']} ({pct(r['Occupancy %'], 0)} full, rated {num(r['Rating'], 1)})" for _, r in scale.iterrows()) + ".")
+    if not fix.empty:
+        L.append("Need fixing: " + "; ".join(
+            f"{r['Route']} ({pct(r['Occupancy %'], 0)} full, {r['Arrival delay (min)']:.0f} min late, "
+            + (f"{r['Breakdowns']} breakdown{'s' if r['Breakdowns'] != 1 else ''}, " if r['Breakdowns'] else "") + f"rated {num(r['Rating'], 1)})" for _, r in fix.iterrows()) + ".")
+    if not hold.empty:
+        L.append("Steady: " + ", ".join(hold["Route"]) + ".")
+
+    if decisions:
+        L += ["", "DECISIONS NEEDED FROM YOU"]
+        for i, p in enumerate(decisions, 1):
+            L.append(f"{i}. {p['decision']}.")
+            L.append(f"   Why: {p.get('why', p['problem'])}.")
+            L.append(f"   Owner: {p['owner']}, by {short_date(p['due'])}. Success: {p['measure']}.")
+    if others:
+        L += ["", "ALSO IN PROGRESS"]
+        for p in others:
+            L.append(f"- {p['action']} ({p['owner']}, by {short_date(p['due'])}).")
+
+    L += ["", "NOTES",
+          f"- {k['days']} days of data, so treat these as early signals. Trends firm up as weeks are added.",
+          f"- NPS proxy from star ratings is {nps_style_str(k['nps_style'])}. It is not survey NPS.",
+          "- Profit is before fixed costs such as bus lease, depot and charging set-up."]
     if dashboard_url:
-        L += ["", f"Live dashboard: {dashboard_url}"]
-    L += ["", "Regards,", sender]
+        L += ["", f"Full dashboard: {dashboard_url}"]
+    L += ["", "Thanks,", sender]
     return subject, "\n".join(L)
 
 
