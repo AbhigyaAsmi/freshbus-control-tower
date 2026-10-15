@@ -467,9 +467,7 @@ with st.sidebar:
     else:
         start, end = d_min, d_max
 
-    states = sorted(set(df_all["Origin state"]) | set(df_all["Destination state"]))
-    state_sel = st.multiselect("Region (state)", states, key=K_STATE, placeholder="All regions",
-                               help="Keeps routes that start or end in these states. Worked out from the city names in each route.")
+    state_sel = []  # region filter removed; starting city and routes cover it
     origins = sorted(df_all["Origin"].unique())
     origin_sel = st.multiselect("Starting city", origins, key=K_ORIGIN, placeholder="All cities")
 
@@ -481,7 +479,7 @@ with st.sidebar:
     route_opts = sorted(in_scope["Route"].unique())
     if K_ROUTES in st.session_state:
         st.session_state[K_ROUTES] = [r for r in st.session_state[K_ROUTES] if r in route_opts]
-    routes_sel = st.multiselect("Routes", route_opts, key=K_ROUTES, placeholder="All routes in the region")
+    routes_sel = st.multiselect("Routes", route_opts, key=K_ROUTES, placeholder="All routes")
 
     with st.expander("More filters"):
         bus_opts = sorted(in_scope[in_scope["Route"].isin(routes_sel or route_opts)]["Bus_ID"].unique())
@@ -540,7 +538,7 @@ def header(K: dict | None) -> None:
 
 if df.empty:
     header(None)
-    st.warning("No trips match these filters. Widen the dates, region or routes, or press **Reset filters** in the sidebar.")
+    st.warning("No trips match these filters. Widen the dates, cities or routes, or press **Reset filters** in the sidebar.")
     st.stop()
 
 # ==========================================================================
@@ -752,8 +750,7 @@ with tabs[0]:
             "- **Contribution profit** = revenue minus energy (the data's fuel column), toll and crew cost. "
             "It is measured before fixed costs such as bus lease, depot, charging set-up and overheads.\n"
             f"- **Cancellations:** {K['cancellations']} in this period, which is a good result. Breakdowns are the reliability "
-            "measure to watch until cancellations appear.\n"
-            "- **Regions** come from the city names in each route.")
+            "measure to watch until cancellations appear.")
 
 # ==========================================================================
 # 2. Revenue
